@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PQC Benchmark Panel — PQC Demo Scene 05</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--quantum);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: #fff;
+}
+header h1 span { color: var(--quantum); }
+.sim-badge {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+
+/* ── PHASE STEPPER ── */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.step-pip {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.step-line {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+/* Steps 1-2: safe-glow (blue) */
+.step.step-safe.active .step-pip  { background: var(--safe-glow); border-color: var(--safe-glow); box-shadow: 0 0 8px var(--safe-glow); }
+.step.step-safe.active .step-label { color: var(--safe-glow); }
+/* Step 3: amber */
+.step.step-amber.active .step-pip  { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.step.step-amber.active .step-label { color: var(--amber); }
+/* Steps 4-5: quantum (green) */
+.step.step-quantum.active .step-pip  { background: var(--quantum); border-color: var(--quantum); box-shadow: 0 0 8px var(--quantum); }
+.step.step-quantum.active .step-label { color: var(--quantum); }
+.step-line.line-passed-safe   { background: var(--safe-glow); }
+.step-line.line-passed-amber  { background: var(--amber); }
+.step-line.line-passed-quantum { background: var(--quantum); }
+
+/* ── NARRATIVE BAR ── */
+.narrative-bar {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  padding: 12px 32px;
+  min-height: 95px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.narr-step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--quantum);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.narr-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.narr-body { flex: 1; }
+.narr-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.narr-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.92);
+}
+.narr-text strong { color: var(--text-bright); font-weight: 600; }
+.narr-text em     { color: var(--quantum); font-style: normal; font-weight: 600; }
+.narr-text .danger { color: var(--threat-glow); font-weight: 600; }
+
+/* ── STAGE ── */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px 10px;
+  gap: 8px;
+  overflow: hidden;
+}
+
+/* ── 4-COLUMN ALGO GRID ── */
+.algo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── ALGO COLUMN CARD ── */
+.algo-col {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  overflow: hidden;
+  transition: all 0.4s ease;
+  position: relative;
+}
+/* Top-border accent via pseudo-element */
+.algo-col::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.algo-col.broken::before { background: var(--threat-glow); }
+.algo-col.safe::before   { background: var(--quantum); }
+
+.algo-col.broken {
+  border-color: rgba(255,255,255,0.07);
+}
+.algo-col.safe {
+  border-color: rgba(255,255,255,0.07);
+}
+.algo-col.highlight-broken {
+  border-color: rgba(255,85,0,0.3);
+  box-shadow: 0 4px 24px rgba(255,85,0,0.12);
+}
+.algo-col.highlight-safe {
+  border-color: rgba(0,232,122,0.3);
+  box-shadow: 0 4px 24px rgba(0,232,122,0.12);
+}
+
+/* Column header */
+.col-header {
+  padding: 14px 14px 11px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding-top: 17px; /* compensate for top accent bar */
+}
+.col-era {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.algo-col.broken .col-era { color: rgba(255,85,0,0.65); }
+.algo-col.safe   .col-era { color: rgba(0,232,122,0.65); }
+
+.col-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 21px;
+  letter-spacing: 2px;
+  color: var(--text-bright);
+  line-height: 1;
+}
+.col-subtitle {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+.col-type-badge {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 2px 8px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 3px;
+}
+.algo-col.broken .col-type-badge {
+  background: rgba(255,85,0,0.08);
+  border: 1px solid rgba(255,85,0,0.18);
+  color: rgba(255,85,0,0.8);
+}
+.algo-col.safe .col-type-badge {
+  background: rgba(0,232,122,0.07);
+  border: 1px solid rgba(0,232,122,0.18);
+  color: rgba(0,232,122,0.85);
+}
+
+/* Column icon — mathematical metaphor SVG */
+.col-header { position: relative; }
+.col-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+.algo-col.broken .col-icon { color: rgba(255,85,0,1); }
+.algo-col.safe   .col-icon { color: rgba(0,232,122,1); }
+.algo-col.highlight-broken .col-icon {
+  opacity: 0.15;
+  filter: grayscale(0.5);
+}
+.algo-col.highlight-safe .col-icon {
+  opacity: 0.9;
+  filter: drop-shadow(0 0 8px rgba(0,232,122,0.6));
+}
+
+/* Column body — scrollable */
+.col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: none;
+}
+.col-body::-webkit-scrollbar { display: none; }
+
+/* Metric sections — toggled per step */
+.metric-section {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeUp 0.35s ease both;
+}
+.metric-section.visible { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Individual metric row */
+.metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 8px 10px;
+}
+.metric-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.metric-value {
+  font-family: 'Inconsolata', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.metric-value.big { font-size: 14px; }
+.metric-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+.note-green  { color: rgba(0,232,122,0.85); }
+.note-red    { color: var(--threat-glow); }
+.note-amber  { color: var(--amber); }
+
+/* Bar chart */
+.metric-bar-wrap {
+  height: 5px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.metric-bar {
+  height: 100%;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bar-threat  { background: var(--threat-glow); }
+.bar-safe    { background: var(--quantum); }
+.bar-dim     { background: rgba(0,232,122,0.4); }
+.bar-neutral { background: rgba(42,159,214,0.5); }
+
+/* Security / verdict badge */
+.status-badge {
+  padding: 9px 12px;
+  border-radius: 6px;
+  text-align: center;
+  font-family: 'Inconsolata', monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+.status-badge .badge-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+.status-badge .badge-main { font-size: 12px; display: block; }
+.status-badge .badge-sub  {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+.badge-broken {
+  background: rgba(255,85,0,0.16);
+  border: 1px solid rgba(255,85,0,0.42);
+  color: var(--threat-glow);
+  box-shadow: 0 0 8px rgba(255,85,0,0.12);
+}
+.badge-safe {
+  background: rgba(0,232,122,0.08);
+  border: 1px solid rgba(0,232,122,0.22);
+  color: var(--quantum);
+}
+
+/* NIST block */
+.nist-block {
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: 'Inconsolata', monospace;
+}
+.nist-block.approved {
+  background: rgba(0,232,122,0.07);
+  border: 1px solid rgba(0,232,122,0.2);
+}
+.nist-block.legacy {
+  background: rgba(255,85,0,0.07);
+  border: 1px solid rgba(255,85,0,0.2);
+}
+.nist-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.nist-block.approved .nist-title { color: var(--quantum); }
+.nist-block.legacy   .nist-title { color: var(--threat-glow); }
+.nist-body {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* Migration priority row */
+.priority-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.priority-icon { font-size: 14px; flex-shrink: 0; padding-top: 1px; }
+.priority-body {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.priority-body strong { color: var(--text); font-weight: 700; }
+.priority-row.pri-red   { border-color: rgba(255,85,0,0.2); }
+.priority-row.pri-green { border-color: rgba(0,232,122,0.2); }
+
+/* Divider line between metric rows */
+.metric-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* ── HOOK BAR ── */
+.micro-summary {
+  display: none;
+  flex-shrink: 0;
+  padding: 7px 28px;
+  background: rgba(0,232,122,0.03);
+  border-top: 1px solid rgba(0,232,122,0.12);
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+}
+.micro-summary.show { display: flex; }
+.ms-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.ms-x     { color: var(--threat-glow); font-weight: 700; font-size: 13px; }
+.ms-check { color: var(--quantum);     font-weight: 700; font-size: 13px; }
+.ms-name  { color: var(--text-bright); letter-spacing: 1.5px; }
+.ms-label { color: var(--text-dim); }
+.ms-div   { width: 1px; height: 18px; background: rgba(255,255,255,0.08); }
+
+.hook-bar {
+  flex-shrink: 0;
+  background: rgba(0,232,122,0.06);
+  border-top: 5px solid var(--quantum);
+  padding: 9px 32px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.hook-bar.show { display: flex; }
+.hook-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(0,232,122,0.9);
+  line-height: 1.4;
+}
+.hook-text strong { color: var(--text-bright); }
+.hook-cta {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #07080d;
+  background: var(--quantum);
+  padding: 7px 18px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 44px;
+}
+.btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 6px 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+  min-height: 36px;
+}
+.btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+}
+.btn:disabled { opacity: 0.25; cursor: default; }
+.btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.key-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+.step-dots { display: flex; gap: 8px; align-items: center; }
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: var(--quantum); transform: scale(1.5); }
+
+/* ── PER-STEP INFOGRAPHIC STRIP ── */
+.step-infographic {
+  flex-shrink: 0; height: 56px;
+  position: relative; overflow: hidden;
+  background: rgba(255,255,255,0.016);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+.infog-panel {
+  position: absolute; inset: 0;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.infog-panel.visible {
+  opacity: 1; pointer-events: auto;
+  animation: fadeUp 0.35s ease both;
+}
+/* Panel 0: 2-column algorithm split */
+.infog-2split { display: flex; align-items: center; gap: 16px; width: 100%; }
+.i2s-half {
+  flex: 1; display: flex; flex-direction: column; gap: 2px;
+  padding: 5px 10px; border-radius: 3px;
+}
+.i2s-half.broken { background: rgba(255,85,0,0.05); border: 1px solid rgba(255,85,0,0.14); }
+.i2s-half.safe   { background: rgba(0,232,122,0.04); border: 1px solid rgba(0,232,122,0.13); }
+.i2s-era  { font-family: 'Inconsolata', monospace; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; }
+.i2s-half.broken .i2s-era { color: rgba(255,85,0,0.6); }
+.i2s-half.safe   .i2s-era { color: rgba(0,232,122,0.6); }
+.i2s-algos { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1.5px; }
+.i2s-half.broken .i2s-algos { color: rgba(255,85,0,0.9); }
+.i2s-half.safe   .i2s-algos { color: rgba(0,232,122,0.9); }
+.i2s-vs { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.28); flex-shrink: 0; }
+/* Shared ruler/race layout */
+.infog-ruler, .infog-race { display: flex; align-items: center; gap: 12px; width: 100%; }
+.ir-title { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 1.2px; color: rgba(255,255,255,0.28); white-space: nowrap; flex-shrink: 0; }
+.ir-rows { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.ir-row  { display: flex; align-items: center; gap: 6px; }
+.ir-name { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 0.5px; width: 74px; flex-shrink: 0; }
+.ir-name.broken { color: rgba(255,85,0,0.7); }
+.ir-name.safe   { color: rgba(0,232,122,0.7); }
+.ir-track { flex: 1; height: 5px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.ir-fill  { height: 100%; border-radius: 2px; }
+.ir-fill.broken { background: rgba(255,85,0,0.55); }
+.ir-fill.safe   { background: rgba(0,232,122,0.58); }
+.ir-val { font-family: 'Inconsolata', monospace; font-size: 9px; color: rgba(255,255,255,0.38); white-space: nowrap; flex-shrink: 0; min-width: 92px; }
+.ir-note { font-family: 'Rajdhani', sans-serif; font-size: 11px; color: rgba(0,232,122,0.45); flex-shrink: 0; white-space: nowrap; }
+/* Panel 3: resistance locks */
+.infog-lock { display: flex; align-items: center; gap: 14px; width: 100%; }
+.il-block { flex: 1; display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 3px; }
+.il-block.broken { background: rgba(255,85,0,0.05); border: 1px solid rgba(255,85,0,0.14); }
+.il-block.safe   { background: rgba(0,232,122,0.04); border: 1px solid rgba(0,232,122,0.13); }
+.il-icon  { font-size: 20px; flex-shrink: 0; }
+.il-info  { display: flex; flex-direction: column; gap: 1px; }
+.il-algo  { font-family: 'Inconsolata', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+.il-block.broken .il-algo { color: rgba(255,85,0,0.9); }
+.il-block.safe   .il-algo { color: rgba(0,232,122,0.9); }
+.il-status { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 1px; }
+.il-block.broken .il-status { color: rgba(255,85,0,0.6); }
+.il-block.safe   .il-status { color: rgba(0,232,122,0.6); }
+.il-reason { font-family: 'Rajdhani', sans-serif; font-size: 11px; color: rgba(255,255,255,0.32); }
+.il-arrow  { font-family: 'Inconsolata', monospace; font-size: 14px; color: rgba(255,255,255,0.28); flex-shrink: 0; }
+/* Panel 4: NIST timeline */
+.infog-timeline { display: flex; align-items: center; width: 100%; }
+.it-wrap  { width: 100%; }
+.it-track { position: relative; height: 44px; border-bottom: 1px solid rgba(255,255,255,0.09); }
+.it-node  { position: absolute; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; transform: translateX(-50%); }
+.it-dot   { width: 9px; height: 9px; border-radius: 50%; }
+.it-node.past   .it-dot { background: rgba(255,85,0,0.4); border: 1px solid rgba(255,85,0,0.6); }
+.it-node.now    .it-dot { background: var(--quantum); box-shadow: 0 0 5px var(--quantum); }
+.it-node.future .it-dot { background: var(--threat-glow); box-shadow: 0 0 5px var(--threat-glow); }
+.it-year  { font-family: 'Inconsolata', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+.it-node.past   .it-year { color: rgba(255,85,0,0.6); }
+.it-node.now    .it-year { color: var(--quantum); }
+.it-node.future .it-year { color: var(--threat-glow); }
+.it-lbl   { font-family: 'Inconsolata', monospace; font-size: 8px; letter-spacing: 0.5px; white-space: nowrap; }
+.it-node.past   .it-lbl { color: rgba(255,85,0,0.5); }
+.it-node.now    .it-lbl { color: rgba(0,232,122,0.7); }
+.it-node.future .it-lbl { color: rgba(255,85,0,0.65); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 05 / 06</div>
+    <h1>PQC <span>BENCHMARK</span> PANEL</h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge">NIST FIPS 2024</div>
+  </div>
+</header>
+
+<!-- PHASE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper" id="phaseStepper">
+    <div class="step step-safe" id="phase-step-0">
+      <div class="step-pip"></div>
+      <div class="step-label">INTRO</div>
+    </div>
+    <div class="step-line" id="phase-line-0"></div>
+    <div class="step step-safe" id="phase-step-1">
+      <div class="step-pip"></div>
+      <div class="step-label">KEY SIZE</div>
+    </div>
+    <div class="step-line" id="phase-line-1"></div>
+    <div class="step step-amber" id="phase-step-2">
+      <div class="step-pip"></div>
+      <div class="step-label">SPEED</div>
+    </div>
+    <div class="step-line" id="phase-line-2"></div>
+    <div class="step step-quantum" id="phase-step-3">
+      <div class="step-pip"></div>
+      <div class="step-label">QUANTUM</div>
+    </div>
+    <div class="step-line" id="phase-line-3"></div>
+    <div class="step step-quantum" id="phase-step-4">
+      <div class="step-pip"></div>
+      <div class="step-label">VERDICT</div>
+    </div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar">
+  <div class="narr-step-label" id="narrStepLabel">STEP 1 / 5</div>
+  <div class="narr-divider"></div>
+  <div class="narr-body">
+    <div class="narr-headline" id="narrHeadline">MEET THE FOUR ALGORITHMS</div>
+    <div class="narr-text" id="narrText">Four algorithms. Two generations. One future. <strong>RSA and ECC</strong> power today's internet — <em>Kyber and Dilithium</em> will power tomorrow's.</div>
+  </div>
+</div>
+
+<!-- STAGE: 4-column benchmark grid -->
+<div class="stage">
+
+  <!-- PER-STEP INFOGRAPHIC STRIP -->
+  <div class="step-infographic" id="stepInfographic">
+
+    <!-- Panel 0: INTRO — algorithm families split -->
+    <div class="infog-panel" id="infog-0">
+      <div class="infog-2split">
+        <div class="i2s-half broken">
+          <div class="i2s-era">Classical Era &mdash; At Risk</div>
+          <div class="i2s-algos">RSA-2048 &nbsp;&middot;&nbsp; ECDSA P-256</div>
+        </div>
+        <div class="i2s-vs">VS</div>
+        <div class="i2s-half safe">
+          <div class="i2s-era">Post-Quantum Era &mdash; NIST FIPS 2024</div>
+          <div class="i2s-algos">KYBER-768 &nbsp;&middot;&nbsp; DILITHIUM-3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 1: KEY SIZE — public key ruler -->
+    <div class="infog-panel" id="infog-1">
+      <div class="infog-ruler">
+        <div class="ir-title">PUBLIC KEY SIZE</div>
+        <div class="ir-rows">
+          <div class="ir-row"><span class="ir-name broken">ECC P-256</span><div class="ir-track"><div class="ir-fill broken" style="width:3%"></div></div><span class="ir-val">64 B</span></div>
+          <div class="ir-row"><span class="ir-name broken">RSA-2048</span><div class="ir-track"><div class="ir-fill broken" style="width:13%"></div></div><span class="ir-val">256 B</span></div>
+          <div class="ir-row"><span class="ir-name safe">KYBER-768</span><div class="ir-track"><div class="ir-fill safe" style="width:61%"></div></div><span class="ir-val">1,184 B</span></div>
+          <div class="ir-row"><span class="ir-name safe">DILITHIUM-3</span><div class="ir-track"><div class="ir-fill safe" style="width:100%"></div></div><span class="ir-val">1,952 B</span></div>
+        </div>
+        <div class="ir-note">Larger key &rarr; harder math &rarr; quantum-safe</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: SPEED — key gen race (longer bar = faster) -->
+    <div class="infog-panel" id="infog-2">
+      <div class="infog-race">
+        <div class="ir-title">KEYGEN SPEED<br>LONGER&nbsp;=&nbsp;FASTER</div>
+        <div class="ir-rows">
+          <div class="ir-row"><span class="ir-name broken">RSA-2048</span><div class="ir-track"><div class="ir-fill broken" style="width:3%"></div></div><span class="ir-val">1.5ms</span></div>
+          <div class="ir-row"><span class="ir-name broken">ECC P-256</span><div class="ir-track"><div class="ir-fill broken" style="width:19%"></div></div><span class="ir-val">0.28ms</span></div>
+          <div class="ir-row"><span class="ir-name safe">KYBER-768</span><div class="ir-track"><div class="ir-fill safe" style="width:100%"></div></div><span class="ir-val">0.05ms &mdash; 30&times; faster</span></div>
+          <div class="ir-row"><span class="ir-name safe">DILITHIUM-3</span><div class="ir-track"><div class="ir-fill safe" style="width:63%"></div></div><span class="ir-val">0.08ms</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: QUANTUM RESISTANCE — lock metaphor -->
+    <div class="infog-panel" id="infog-3">
+      <div class="infog-lock">
+        <div class="il-block broken">
+          <div class="il-icon">&#x1F513;</div>
+          <div class="il-info">
+            <div class="il-algo">RSA-2048 &nbsp;&middot;&nbsp; ECDSA P-256</div>
+            <div class="il-status">ZERO QUANTUM RESISTANCE</div>
+            <div class="il-reason">Shor&rsquo;s algorithm breaks both completely</div>
+          </div>
+        </div>
+        <div class="il-arrow">&rarr;</div>
+        <div class="il-block safe">
+          <div class="il-icon">&#x1F512;</div>
+          <div class="il-info">
+            <div class="il-algo">KYBER-768 &nbsp;&middot;&nbsp; DILITHIUM-3</div>
+            <div class="il-status">FULL QUANTUM RESISTANCE</div>
+            <div class="il-reason">LWE hard problem &mdash; no quantum shortcut</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 4: NIST VERDICT — certification timeline -->
+    <div class="infog-panel" id="infog-4">
+      <div class="infog-timeline">
+        <div class="it-wrap">
+          <div class="it-track">
+            <div class="it-node past" style="left:10%">
+              <span class="it-lbl">RSA</span>
+              <span class="it-dot"></span>
+              <span class="it-year">1977</span>
+            </div>
+            <div class="it-node past" style="left:22%">
+              <span class="it-lbl">ECC</span>
+              <span class="it-dot"></span>
+              <span class="it-year">1985</span>
+            </div>
+            <div class="it-node now" style="left:68%">
+              <span class="it-lbl">FIPS 203/204</span>
+              <span class="it-dot"></span>
+              <span class="it-year">2024</span>
+            </div>
+            <div class="it-node future" style="left:88%">
+              <span class="it-lbl">RSA/ECC RETIRE</span>
+              <span class="it-dot"></span>
+              <span class="it-year">2030</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.step-infographic -->
+
+  <div class="algo-grid">
+
+    <!-- ── RSA-2048 ── -->
+    <div class="algo-col broken" id="col-rsa">
+      <div class="col-header">
+        <div class="col-era">Classical Era</div>
+        <div class="col-name">RSA-2048</div>
+        <div class="col-subtitle">Integer Factoring</div>
+        <span class="col-type-badge">KEY EXCHANGE + SIGN</span>
+        <svg class="col-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="13" cy="19" r="10" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="25" cy="19" r="10" stroke="currentColor" stroke-width="1.5"/>
+          <text x="5" y="22" font-family="Inconsolata,monospace" font-size="8" fill="currentColor">p</text>
+          <text x="27" y="22" font-family="Inconsolata,monospace" font-size="8" fill="currentColor">q</text>
+        </svg>
+      </div>
+      <div class="col-body">
+
+        <div class="metric-section visible" id="rsa-s0">
+          <div class="metric-row">
+            <div class="metric-label">In use since</div>
+            <div class="metric-value">1977</div>
+            <div class="metric-sub">RSA-2048 became standard ~2002</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Deployed in</div>
+            <div class="metric-value big">TLS · SSH · PKI</div>
+            <div class="metric-sub">Certificates, VPNs, email, code signing</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Hard problem</div>
+            <div class="metric-value big">Factor N = p × q</div>
+            <div class="metric-sub">Product of two large primes</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="rsa-s1">
+          <div class="metric-row">
+            <div class="metric-label">Public key</div>
+            <div class="metric-value">256 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="13"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Private key</div>
+            <div class="metric-value">1,191 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="30"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Signature size</div>
+            <div class="metric-value">256 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="8"></div></div>
+            <div class="metric-sub note-green">Compact — but quantum-breakable</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="rsa-s2">
+          <div class="metric-sub" style="text-align:center; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; letter-spacing:1px;">LONGER BAR = FASTER</div>
+          <div class="metric-row">
+            <div class="metric-label">Key generation</div>
+            <div class="metric-value">~1.5 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-threat" data-pct="10"></div></div>
+            <div class="metric-sub note-red">Slowest — prime generation is costly · <strong>30× slower than Kyber</strong></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Sign / Encrypt</div>
+            <div class="metric-value">~1.2 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-threat" data-pct="10"></div></div>
+            <div class="metric-sub note-red"><strong>12× slower than Dilithium</strong></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Verify / Decrypt</div>
+            <div class="metric-value">~0.05 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="97"></div></div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="rsa-s3">
+          <div class="status-badge badge-broken">
+            <span class="badge-icon">✕</span>
+            <span class="badge-main">BROKEN</span>
+            <span class="badge-sub">Against a CRQC</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Classical security</div>
+            <div class="metric-value">112-bit</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Quantum attack</div>
+            <div class="metric-value" style="color:var(--threat-glow)">Shor's Alg.</div>
+            <div class="metric-sub">~8 hrs on a CRQC — complete key recovery</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Logical qubits needed</div>
+            <div class="metric-value">~4,000</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="rsa-s4">
+          <div class="nist-block legacy">
+            <div class="nist-title">⚠ LEGACY — PHASE OUT</div>
+            <div class="nist-body">NIST SP 800-131A: RSA-2048 deprecated after 2030. Disallowed for new applications.</div>
+          </div>
+          <div class="priority-row pri-red">
+            <div class="priority-icon">🔴</div>
+            <div class="priority-body"><strong>Replace now</strong> for long-lived data. Migrate key exchange to ML-KEM, signatures to ML-DSA.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── ECDSA P-256 ── -->
+    <div class="algo-col broken" id="col-ecc">
+      <div class="col-header">
+        <div class="col-era">Classical Era</div>
+        <div class="col-name">ECDSA P-256</div>
+        <div class="col-subtitle">Elliptic Curve Discrete Log</div>
+        <span class="col-type-badge">Sign / ECDH KEM</span>
+        <svg class="col-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M3 31 C7 4, 27 4, 35 21" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="11" cy="12" r="2.5" fill="currentColor"/>
+          <circle cx="27" cy="22" r="2.5" fill="currentColor"/>
+          <line x1="4" y1="24" x2="18" y2="2" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2.5,2.5" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="col-body">
+
+        <div class="metric-section visible" id="ecc-s0">
+          <div class="metric-row">
+            <div class="metric-label">In use since</div>
+            <div class="metric-value">~2000</div>
+            <div class="metric-sub">Replaced RSA for compactness in TLS</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Deployed in</div>
+            <div class="metric-value big">TLS 1.3 · JWT</div>
+            <div class="metric-sub">HTTPS, SSH, Bitcoin, code signing</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Hard problem</div>
+            <div class="metric-value big">EC Discrete Log</div>
+            <div class="metric-sub">Find k given P and kP on curve</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="ecc-s1">
+          <div class="metric-row">
+            <div class="metric-label">Public key</div>
+            <div class="metric-value">64 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="3"></div></div>
+            <div class="metric-sub note-green">Smallest public key of all four</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Private key</div>
+            <div class="metric-value">32 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="1"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Signature size</div>
+            <div class="metric-value">64 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-neutral" data-pct="2"></div></div>
+            <div class="metric-sub note-red">Compact today — useless against CRQC</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="ecc-s2">
+          <div class="metric-sub" style="text-align:center; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; letter-spacing:1px;">LONGER BAR = FASTER</div>
+          <div class="metric-row">
+            <div class="metric-label">Key generation</div>
+            <div class="metric-value">~0.2 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-threat" data-pct="60"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Sign / Encrypt</div>
+            <div class="metric-value">~0.3 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-threat" data-pct="40"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Verify / Decrypt</div>
+            <div class="metric-value">~0.5 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-threat" data-pct="10"></div></div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="ecc-s3">
+          <div class="status-badge badge-broken">
+            <span class="badge-icon">✕</span>
+            <span class="badge-main">BROKEN</span>
+            <span class="badge-sub">Against a CRQC</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Classical security</div>
+            <div class="metric-value">128-bit</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Quantum attack</div>
+            <div class="metric-value" style="color:var(--threat-glow)">Shor's Alg.</div>
+            <div class="metric-sub">Same weakness as RSA — complete break</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Logical qubits needed</div>
+            <div class="metric-value">~2,330</div>
+            <div class="metric-sub note-red">Fewer than RSA — breaks sooner</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="ecc-s4">
+          <div class="nist-block legacy">
+            <div class="nist-title">⚠ LEGACY — PHASE OUT</div>
+            <div class="nist-body">NSA CNSA 2.0: ECC disallowed for new systems now. P-256 use ends 2030. Highest priority for migration.</div>
+          </div>
+          <div class="priority-row pri-red">
+            <div class="priority-icon">🔴</div>
+            <div class="priority-body"><strong>Highest urgency.</strong> Breaks with fewer qubits than RSA. Replace ECDH with ML-KEM, ECDSA with ML-DSA.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── KYBER-768 ── -->
+    <div class="algo-col safe" id="col-kyber">
+      <div class="col-header">
+        <div class="col-era">Quantum-Safe Era</div>
+        <div class="col-name">KYBER-768</div>
+        <div class="col-subtitle">Module Learning With Errors</div>
+        <span class="col-type-badge">Key Encapsulation</span>
+        <svg class="col-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="7"  cy="7"  r="1.8" fill="currentColor"/>
+          <circle cx="15" cy="7"  r="1.8" fill="currentColor"/>
+          <circle cx="23" cy="7"  r="1.8" fill="currentColor"/>
+          <circle cx="31" cy="7"  r="1.8" fill="currentColor"/>
+          <circle cx="7"  cy="15" r="1.8" fill="currentColor"/>
+          <circle cx="15" cy="15" r="1.8" fill="currentColor"/>
+          <circle cx="23" cy="15" r="1.8" fill="currentColor"/>
+          <circle cx="31" cy="15" r="1.8" fill="currentColor"/>
+          <circle cx="7"  cy="23" r="1.8" fill="currentColor"/>
+          <circle cx="15" cy="23" r="1.8" fill="currentColor"/>
+          <circle cx="23" cy="23" r="1.8" fill="currentColor"/>
+          <circle cx="31" cy="23" r="1.8" fill="currentColor"/>
+          <circle cx="7"  cy="31" r="1.8" fill="currentColor"/>
+          <circle cx="15" cy="31" r="1.8" fill="currentColor"/>
+          <circle cx="23" cy="31" r="1.8" fill="currentColor"/>
+          <circle cx="31" cy="31" r="1.8" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="col-body">
+
+        <div class="metric-section visible" id="kyber-s0">
+          <div class="metric-row">
+            <div class="metric-label">Standardized</div>
+            <div class="metric-value">FIPS 203</div>
+            <div class="metric-sub">August 2024 · Now called ML-KEM</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Designed for</div>
+            <div class="metric-value big">Key Exchange</div>
+            <div class="metric-sub">Replaces ECDH/RSA in TLS, VPNs, messaging</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Hard problem</div>
+            <div class="metric-value big">Module-LWE</div>
+            <div class="metric-sub">Noisy linear algebra — no quantum speedup</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="kyber-s1">
+          <div class="metric-row">
+            <div class="metric-label">Public key</div>
+            <div class="metric-value">1,184 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="61"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Ciphertext</div>
+            <div class="metric-value">1,088 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="56"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Signature size</div>
+            <div class="metric-value">N / A</div>
+            <div class="metric-sub">KEM only — pair with Dilithium for signing</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="kyber-s2">
+          <div class="metric-sub" style="text-align:center; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; letter-spacing:1px;">LONGER BAR = FASTER</div>
+          <div class="metric-row">
+            <div class="metric-label">Key generation</div>
+            <div class="metric-value">~0.05 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="97"></div></div>
+            <div class="metric-sub note-green">Fastest keygen of all four · <strong>30× faster than RSA</strong></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Encapsulate</div>
+            <div class="metric-value">~0.07 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="97"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Decapsulate</div>
+            <div class="metric-value">~0.05 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="97"></div></div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="kyber-s3">
+          <div class="status-badge badge-safe">
+            <span class="badge-icon">✓</span>
+            <span class="badge-main">QUANTUM SAFE</span>
+            <span class="badge-sub">NIST Security Level 3</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Classical security</div>
+            <div class="metric-value">~178-bit</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Quantum security</div>
+            <div class="metric-value" style="color:var(--quantum)">~161-bit</div>
+            <div class="metric-sub">No known quantum speedup on LWE</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Best known attack</div>
+            <div class="metric-value big">Lattice Sieving</div>
+            <div class="metric-sub">Exponential time — classically and quantum</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="kyber-s4">
+          <div class="nist-block approved">
+            <div class="nist-title">✓ FIPS 203 APPROVED</div>
+            <div class="nist-body">August 2024. In production at Google, Cloudflare, Apple, Signal. Hybrid X25519+ML-KEM in TLS 1.3 available now.</div>
+          </div>
+          <div class="priority-row pri-green">
+            <div class="priority-icon">🟢</div>
+            <div class="priority-body"><strong>Deploy now.</strong> Drop-in for ECDH. Start with hybrid mode for backward compatibility.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── DILITHIUM-3 ── -->
+    <div class="algo-col safe" id="col-dilithium">
+      <div class="col-header">
+        <div class="col-era">Quantum-Safe Era</div>
+        <div class="col-name">DILITHIUM-3</div>
+        <div class="col-subtitle">Module-LWE + Module-SIS</div>
+        <span class="col-type-badge">Digital Signatures</span>
+        <svg class="col-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="19,4 33,15 27,32 11,32 5,15" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="19" y1="19" x2="19" y2="4"  stroke="currentColor" stroke-width="0.8" opacity="0.6"/>
+          <line x1="19" y1="19" x2="33" y2="15" stroke="currentColor" stroke-width="0.8" opacity="0.6"/>
+          <line x1="19" y1="19" x2="27" y2="32" stroke="currentColor" stroke-width="0.8" opacity="0.6"/>
+          <line x1="19" y1="19" x2="11" y2="32" stroke="currentColor" stroke-width="0.8" opacity="0.6"/>
+          <line x1="19" y1="19" x2="5"  y2="15" stroke="currentColor" stroke-width="0.8" opacity="0.6"/>
+        </svg>
+      </div>
+      <div class="col-body">
+
+        <div class="metric-section visible" id="dil-s0">
+          <div class="metric-row">
+            <div class="metric-label">Standardized</div>
+            <div class="metric-value">FIPS 204</div>
+            <div class="metric-sub">August 2024 · Now called ML-DSA</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Designed for</div>
+            <div class="metric-value big">Signatures</div>
+            <div class="metric-sub">Replaces ECDSA/RSA in PKI, code signing, certs</div>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-row">
+            <div class="metric-label">Hard problem</div>
+            <div class="metric-value big">Module-LWE + SIS</div>
+            <div class="metric-sub">Two hard problems — layered security assumptions</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="dil-s1">
+          <div class="metric-row">
+            <div class="metric-label">Public key</div>
+            <div class="metric-value">1,952 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="100"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Private key</div>
+            <div class="metric-value">4,000 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="100"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Signature size</div>
+            <div class="metric-value">3,293 B</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="100"></div></div>
+            <div class="metric-sub note-amber">Larger than RSA/ECC — plan cert chain size</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="dil-s2">
+          <div class="metric-sub" style="text-align:center; margin-bottom:8px; color:rgba(255,255,255,0.4); font-size:11px; letter-spacing:1px;">LONGER BAR = FASTER</div>
+          <div class="metric-row">
+            <div class="metric-label">Key generation</div>
+            <div class="metric-value">~0.08 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="61"></div></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Sign</div>
+            <div class="metric-value">~0.1 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="95"></div></div>
+            <div class="metric-sub note-green"><strong>12× faster than RSA</strong></div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Verify</div>
+            <div class="metric-value">~0.05 ms</div>
+            <div class="metric-bar-wrap"><div class="metric-bar bar-safe" data-pct="97"></div></div>
+            <div class="metric-sub note-green">Fastest verification of all four</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="dil-s3">
+          <div class="status-badge badge-safe">
+            <span class="badge-icon">✓</span>
+            <span class="badge-main">QUANTUM SAFE</span>
+            <span class="badge-sub">NIST Security Level 3</span>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Classical security</div>
+            <div class="metric-value">~128-bit</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Quantum security</div>
+            <div class="metric-value" style="color:var(--quantum)">~128-bit</div>
+            <div class="metric-sub">Grover's gives no useful advantage on LWE</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Security model</div>
+            <div class="metric-value big">EUF-CMA</div>
+            <div class="metric-sub">Unforgeable under adaptive chosen-message attack</div>
+          </div>
+        </div>
+
+        <div class="metric-section" id="dil-s4">
+          <div class="nist-block approved">
+            <div class="nist-title">✓ FIPS 204 APPROVED</div>
+            <div class="nist-body">August 2024. Primary signature standard for post-quantum PKI. Larger payloads — factor into TLS handshake planning.</div>
+          </div>
+          <div class="priority-row pri-green">
+            <div class="priority-icon">🟢</div>
+            <div class="priority-body"><strong>Deploy now.</strong> Primary replacement for ECDSA and RSA-PSS. Size tradeoff is manageable — security is real.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.algo-grid -->
+</div><!-- /.stage -->
+
+<!-- MICRO-SUMMARY (step 5 only) -->
+<div class="micro-summary" id="microSummary">
+  <div class="ms-badge">
+    <span class="ms-x">✕✕</span>
+    <span class="ms-name">RSA-2048 &amp; ECDSA P-256</span>
+    <span class="ms-label">— QUANTUM BROKEN — RETIRE BY 2030</span>
+  </div>
+  <div class="ms-div"></div>
+  <div class="ms-badge">
+    <span class="ms-check">✓✓</span>
+    <span class="ms-name">KYBER-768 &amp; DILITHIUM-3</span>
+    <span class="ms-label">— NIST FIPS CERTIFIED — DEPLOY NOW</span>
+  </div>
+</div>
+
+<!-- HOOK BAR -->
+<div class="hook-bar" id="hookBar">
+  <div class="hook-text">
+    <strong>The standards are finalized. The implementations are production-ready.</strong>
+    The question is no longer <em>if</em> you migrate — it's whether you'll finish before a CRQC forces your hand.
+  </div>
+  <div class="hook-cta">WHAT'S YOUR PLAN?</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn" id="btnPrev" disabled>◀ PREV</button>
+  <div class="step-dots" id="stepDots"></div>
+  <button class="btn" id="btnNext">NEXT ▶</button>
+  <span class="key-hint">← → ARROW KEYS</span>
+</div>
+
+<script>
+const STEPS = [
+  {
+    stepLabel: 'STEP 1 / 5',
+    headline:  'MEET THE FOUR ALGORITHMS',
+    text:      'Four algorithms. Two generations. One future. <strong>RSA and ECC</strong> power today\'s internet — <em>Kyber and Dilithium</em> will power tomorrow\'s.',
+    section:   's0',
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 2 / 5',
+    headline:  'KEY SIZE & PAYLOAD OVERHEAD',
+    text:      'PQC keys are larger than RSA or ECC — that\'s the tradeoff for quantum safety. <strong>Bigger math problems require bigger keys.</strong> The overhead is manageable. The security is real.',
+    section:   's1',
+    hookBar:   false,
+    animateBars: true,
+  },
+  {
+    stepLabel: 'STEP 3 / 5',
+    headline:  'PERFORMANCE: CAN PQC KEEP UP?',
+    text:      '<em>Yes.</em> Kyber and Dilithium are <strong>10–30× faster</strong> than RSA for key generation and signing. The performance concern is a myth — PQC is ready for production traffic today.',
+    section:   's2',
+    hookBar:   false,
+    animateBars: true,
+  },
+  {
+    stepLabel: 'STEP 4 / 5',
+    headline:  'QUANTUM RESISTANCE SCORES',
+    text:      'RSA and ECC offer <span class="danger">zero quantum resistance</span> — Shor\'s algorithm breaks both completely. <em>Kyber and Dilithium</em> retain full security against classical and quantum attacks.',
+    section:   's3',
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 5 / 5',
+    headline:  'NIST VERDICT & MIGRATION PRIORITY',
+    text:      'NIST finalized four PQC standards in August 2024. <strong>RSA and ECC are now officially legacy</strong> — scheduled for retirement by 2030. The standards exist. The question is whether your org moves first.',
+    section:   's4',
+    hookBar:   true,
+  },
+];
+
+let currentStep = 0;
+
+const COLS = ['rsa', 'ecc', 'kyber', 'dil'];
+
+function showSections(suffix) {
+  document.querySelectorAll('.metric-section').forEach(el => el.classList.remove('visible'));
+  COLS.forEach(col => {
+    const el = document.getElementById(col + '-' + suffix);
+    if (el) el.classList.add('visible');
+  });
+}
+
+function resetBars() {
+  document.querySelectorAll('.metric-bar').forEach(bar => { bar.style.width = '0%'; });
+}
+
+function animateBars() {
+  setTimeout(() => {
+    document.querySelectorAll('.metric-section.visible .metric-bar').forEach(bar => {
+      const pct = bar.getAttribute('data-pct');
+      if (pct) bar.style.width = pct + '%';
+    });
+  }, 80);
+}
+
+function setColHighlight(suffix) {
+  const broken = document.querySelectorAll('.algo-col.broken');
+  const safe   = document.querySelectorAll('.algo-col.safe');
+  if (suffix === 's3' || suffix === 's4') {
+    broken.forEach(el => el.classList.add('highlight-broken'));
+    safe.forEach(el => el.classList.add('highlight-safe'));
+  } else {
+    document.querySelectorAll('.algo-col').forEach(el => {
+      el.classList.remove('highlight-broken', 'highlight-safe');
+    });
+  }
+}
+
+function updatePhaseStepper(idx) {
+  // Step color classes: 0=safe, 1=safe, 2=amber, 3=quantum, 4=quantum
+  for (let i = 0; i < 5; i++) {
+    const stepEl = document.getElementById('phase-step-' + i);
+    if (stepEl) stepEl.classList.toggle('active', i === idx);
+  }
+  // Lines: line-0 between steps 0-1, etc.
+  const lineClasses = ['line-passed-safe', 'line-passed-amber', 'line-passed-quantum', 'line-passed-quantum'];
+  for (let i = 0; i < 4; i++) {
+    const lineEl = document.getElementById('phase-line-' + i);
+    if (lineEl) {
+      lineEl.className = 'step-line';
+      if (i < idx) {
+        // determine which class based on which segment
+        if (i < 2) lineEl.classList.add('line-passed-safe');
+        else if (i === 2) lineEl.classList.add('line-passed-amber');
+        else lineEl.classList.add('line-passed-quantum');
+      }
+    }
+  }
+}
+
+function applyStep(idx) {
+  const s = STEPS[idx];
+
+  document.getElementById('narrStepLabel').textContent = s.stepLabel;
+  document.getElementById('narrHeadline').textContent  = s.headline;
+  document.getElementById('narrText').innerHTML        = s.text;
+
+  resetBars();
+  showSections(s.section);
+  setColHighlight(s.section);
+  updatePhaseStepper(idx);
+
+  // Per-step infographic panel
+  document.querySelectorAll('.infog-panel').forEach((p, i) => p.classList.toggle('visible', i === idx));
+
+  if (s.animateBars) animateBars();
+
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+  document.getElementById('microSummary').classList.toggle('show', idx === STEPS.length - 1);
+  document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('btnNext').textContent = idx === STEPS.length - 1 ? '→ SCENE 06' : 'NEXT ▶';
+}
+
+function buildDots() {
+  const dotsEl = document.getElementById('stepDots');
+  STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+}
+
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if (currentStep > 0) { currentStep--; applyStep(currentStep); }
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+  else { window.location.href = 'scene6_consequence_map_interactive.html'; }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' && currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+  if (e.key === 'ArrowLeft'  && currentStep > 0)                { currentStep--; applyStep(currentStep); }
+});
+
+buildDots();
+applyStep(0);
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

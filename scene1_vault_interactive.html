@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Vault — PQC Demo Scene 01</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--safe-glow);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 35px;
+  letter-spacing: 3px;
+  color: #fff;
+}
+header h1 span { color: var(--safe-glow); }
+.sim-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.sim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--safe-glow);
+  flex-shrink: 0;
+  animation: sim-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(42,159,214,0.4); }
+  50%       { opacity: 0.6; box-shadow: 0 0 0 4px rgba(42,159,214,0); }
+}
+
+/* PHASE STEPPER */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.step-phase { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.step-phase-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.step-phase-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.step-phase-line {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+.step-phase.era-safe.active .step-phase-dot    { background: var(--safe-glow); border-color: var(--safe-glow); box-shadow: 0 0 8px var(--safe-glow); }
+.step-phase.era-safe.active .step-phase-label  { color: var(--safe-glow); }
+.step-phase.era-amber.active .step-phase-dot   { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.step-phase.era-amber.active .step-phase-label { color: var(--amber); }
+.step-phase.era-threat.active .step-phase-dot  { background: var(--threat-glow); border-color: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+.step-phase.era-threat.active .step-phase-label{ color: var(--threat-glow); }
+.step-phase-line.line-active-amber  { background: var(--amber); }
+.step-phase-line.line-active-threat { background: var(--threat-glow); }
+
+/* NARRATIVE BAR */
+.narrative-bar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  min-height: 95px;
+  position: relative;
+}
+.narr-cell {
+  flex: 1;
+  padding: 10px 18px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  transition: background 0.4s;
+  overflow: hidden;
+}
+.narr-cell:last-child { border-right: none; }
+.narr-cell.active { background: rgba(42,159,214,0.06); }
+.narr-cell.active-threat { background: rgba(255,85,0,0.07); }
+.narr-cell.active-quantum { background: rgba(0,232,122,0.06); }
+.narr-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.narr-label.blue  { color: var(--safe-glow); }
+.narr-label.red   { color: var(--threat-glow); }
+.narr-label.green { color: var(--quantum); }
+.narr-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.92);
+  font-weight: 400;
+  font-family: 'Rajdhani', sans-serif;
+}
+.narr-text strong { color: var(--text); font-weight: 600; }
+.narr-text em { color: var(--safe-glow); font-style: normal; font-weight: 600; }
+.narr-text .warn { color: var(--amber); font-weight: 600; }
+.narr-text .danger { color: var(--threat-glow); font-weight: 600; }
+.narr-text .go { color: var(--quantum); font-weight: 600; }
+
+/* MAIN STAGE */
+.stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* PANELS */
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  position: relative;
+  transition: all 0.4s ease;
+}
+.panel::-webkit-scrollbar { display: none; }
+
+.panel-left {
+  border-right: 1px solid var(--border);
+  border-top: 3px solid var(--safe-glow);
+  background: var(--panel);
+}
+.panel-right {
+  border-left: 1px solid var(--border);
+  border-top: 3px solid var(--threat-glow);
+  background: var(--panel);
+}
+
+/* STEP SECTIONS */
+.step-section {
+  width: 100%;
+  max-width: 400px;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0 24px;
+}
+.step-section.active { display: flex; }
+
+.panel-era {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.panel-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.panel-title.blue  { color: var(--safe-glow); }
+.panel-title.red   { color: var(--threat-glow); }
+.panel-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* VAULT SVG AREA */
+.vault-area {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+  scroll-margin-top: 32px;
+}
+
+/* INFO CARDS */
+.info-card {
+  width: 100%;
+  max-width: 380px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  scroll-margin-top: 32px;
+  opacity: 1;
+  transform: translateY(0);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  transition: all 0.4s ease;
+}
+.info-card.blue-card  { border: 1px solid rgba(42,159,214,0.25); }
+.info-card.red-card   { border: 1px solid rgba(255,85,0,0.25); }
+.info-card.green-card { border: 1px solid rgba(0,232,122,0.25); }
+.info-card.amber-card { border: 1px solid rgba(255,136,0,0.25); }
+
+.card-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.card-label.blue  { color: var(--safe-glow); }
+.card-label.red   { color: var(--threat-glow); }
+.card-label.green { color: var(--quantum); }
+.card-label.amber { color: var(--amber); }
+
+.card-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.card-value.blue  { color: var(--safe-glow); }
+.card-value.red   { color: var(--threat-glow); }
+.card-value.green { color: var(--quantum); }
+.card-value.amber { color: var(--amber); }
+
+.card-desc {
+  font-size: 14px;
+  color: rgba(220,228,240,0.88);
+  line-height: 1.5;
+  font-family: 'Rajdhani', sans-serif;
+}
+.card-desc strong { color: var(--text); }
+
+/* BRUTE FORCE ROWS */
+.bf-rows {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bf-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.bf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px;
+  padding: 5px 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.bf-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: rgba(255,85,0,0.12);
+  transition: width 1.2s ease;
+  width: 0;
+}
+.bf-row.fail .bf-bar { background: rgba(255,85,0,0.12); }
+.bf-row.pass .bf-bar { background: rgba(42,159,214,0.15); }
+.bf-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.bf-row.fail .bf-dot { background: var(--threat-glow); }
+.bf-row.pass .bf-dot { background: var(--safe-glow); }
+.bf-row.dim  .bf-dot { background: var(--text-dim); }
+.bf-text {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  position: relative;
+  z-index: 1;
+}
+.bf-row.fail .bf-text { color: rgba(255,85,0,0.7); }
+.bf-row.pass .bf-text { color: var(--safe-glow); }
+.bf-row.dim  .bf-text { color: rgba(255,255,255,0.15); }
+.bf-result {
+  margin-left: auto;
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+.bf-row.fail .bf-result { color: var(--threat-glow); }
+.bf-row.pass .bf-result { color: var(--safe-glow); }
+
+/* KEY SIZE TABLE */
+.key-table {
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: 16px;
+  scroll-margin-top: 32px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.key-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+}
+.key-table th {
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  font-size: 12px;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.key-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text);
+  font-size: 11px;
+}
+.key-table tr.highlight td { background: rgba(42,159,214,0.06); }
+.key-table tr.highlight td:first-child { color: var(--safe-glow); font-weight: 600; }
+.key-table td.crack-time { color: var(--threat-glow); }
+.key-table td.crack-time.safe { color: var(--text-dim); }
+.key-table td.status-ok { color: var(--quantum); }
+.key-table td.status-warn { color: var(--amber); }
+.key-table td.status-bad  { color: var(--threat-glow); }
+
+/* QUANTUM STEPS */
+.q-steps {
+  width: 100%;
+  max-width: 380px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 16px;
+  scroll-margin-top: 32px;
+}
+.q-steps > .card-label { grid-column: 1 / -1; }
+.q-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(0,232,122,0.04);
+  border: 1px solid rgba(0,232,122,0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease, background 0.3s;
+}
+.q-step.lit {
+  opacity: 1;
+  transform: translateX(0);
+  background: rgba(0,232,122,0.07);
+  border-color: rgba(0,232,122,0.25);
+}
+.q-step-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--quantum);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 18px;
+}
+.q-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--quantum);
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  font-family: 'Rajdhani', sans-serif;
+}
+.q-step-desc {
+  font-size: 14px;
+  color: rgba(220,228,240,0.85);
+  line-height: 1.5;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* VS DIVIDER */
+.vs-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 0;
+  position: relative;
+}
+.vs-line {
+  flex: 1;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(42,159,214,0.3), rgba(0,232,122,0.3), transparent);
+}
+.vs-badge {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--safe-glow);
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  background: var(--bg2);
+  padding: 8px 4px;
+  border: 1px solid rgba(42,159,214,0.2);
+  border-radius: 3px;
+}
+
+/* HOOK BAR */
+.hook-bar {
+  position: fixed;
+  bottom: 60px;
+  left: 0; right: 0;
+  margin: 0 24px;
+  background: rgba(255,0,40,0.08);
+  border: 1px solid rgba(255,85,0,0.3);
+  border-top: 5px solid var(--threat-glow);
+  border-radius: 5px;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.hook-bar.show { opacity: 1; transform: translateY(0); }
+body.hook-visible .panel { padding-bottom: 80px; }
+.hook-icon { font-size: 18px; flex-shrink: 0; }
+.hook-text {
+  font-size: 13px;
+  line-height: 1.4;
+  font-family: 'Rajdhani', sans-serif;
+}
+.hook-text strong { color: var(--threat-glow); }
+.hook-text span   { color: rgba(192,207,224,0.55); font-size: 12px; }
+
+/* CONTROLS */
+.controls {
+  position: fixed;
+  bottom: 12px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  pointer-events: none;
+}
+.ctrl-btn {
+  pointer-events: all;
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(10,12,22,0.95);
+  color: var(--text-dim);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+.ctrl-btn:disabled { opacity: 0.3; cursor: default; }
+.ctrl-btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.ctrl-btn.primary {
+  background: rgba(42,159,214,0.15);
+  border-color: rgba(42,159,214,0.5);
+  color: var(--safe-glow);
+}
+.ctrl-btn.primary:hover { background: rgba(42,159,214,0.25); }
+.ctrl-btn.primary:disabled { opacity: 0.3; }
+
+/* STEP DOTS — small squares */
+.step-dots {
+  pointer-events: none;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 8px;
+}
+.step-dot {
+  width: 6px; height: 6px;
+  border-radius: 1px;
+  background: var(--text-dim);
+  transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: var(--safe-glow); transform: scale(1.4); }
+.step-dot.done { background: rgba(42,159,214,0.4); }
+
+/* VAULT SVG ANIMATIONS */
+@keyframes dial-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes dial-spin-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes pulse-ring {
+  0%   { r: 48; opacity: 0.6; }
+  50%  { r: 54; opacity: 0.2; }
+  100% { r: 48; opacity: 0.6; }
+}
+@keyframes q-spark {
+  0%   { opacity: 0; transform: scale(0.5); }
+  30%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.7; transform: scale(1); }
+}
+@keyframes q-orbit {
+  from { transform: rotate(0deg) translateX(44px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(44px) rotate(-360deg); }
+}
+@keyframes lock-shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-3px) rotate(-2deg); }
+  40%     { transform: translateX(3px) rotate(2deg); }
+  60%     { transform: translateX(-2px); }
+  80%     { transform: translateX(2px); }
+}
+@keyframes door-open {
+  from { transform: scaleX(1); transform-origin: left; }
+  to   { transform: scaleX(0.15); transform-origin: left; }
+}
+@keyframes shimmer {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -40; }
+}
+@keyframes fade-in {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes quantum-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.dial-ring-outer { transform-origin: 50% 50%; }
+.dial-ring-mid   { transform-origin: 50% 50%; }
+.spinning { animation: dial-spin 4s linear infinite; }
+.spinning-rev { animation: dial-spin-rev 6s linear infinite; }
+.spinning-slow { animation: dial-spin 10s linear infinite; }
+
+#vaultDoor { transition: transform 1.2s ease-in-out; transform-origin: left center; }
+#vaultDoor.open { transform: perspective(200px) rotateY(-70deg); }
+#qFlash { animation: quantum-flash 0.8s ease-out forwards; }
+.lock-shaking { animation: lock-shake 0.5s ease-in-out; }
+
+.q-orb {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ── S1.1 COMPARISON VISUAL ── */
+.cv-wrap { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 2px 0; }
+.cv-header { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; }
+.cv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-col { display: flex; flex-direction: column; gap: 5px; }
+.cv-col-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 1.5px; text-align: center; padding: 3px 6px; border-radius: 2px; text-transform: uppercase; }
+.cv-col.classical .cv-col-title { color: var(--safe-glow); background: rgba(42,159,214,0.06); border: 1px solid rgba(42,159,214,0.25); }
+.cv-col.quantum   .cv-col-title { color: var(--threat-glow); background: rgba(255,85,0,0.06); border: 1px solid rgba(255,85,0,0.25); }
+.cv-seq { display: flex; flex-direction: column; gap: 3px; }
+.cv-seq-row { display: flex; align-items: center; gap: 5px; padding: 3px 6px; border-radius: 2px; border: 1px solid rgba(42,159,214,0.08); font-family: 'Inconsolata', monospace; font-size: 9px; color: rgba(42,159,214,0.3); transition: color 0.15s, border-color 0.15s, background 0.15s; }
+.cv-seq-row.checking { color: var(--safe-glow); border-color: rgba(42,159,214,0.55); background: rgba(42,159,214,0.09); }
+.cv-prob { display: flex; flex-direction: column; gap: 4px; }
+.cv-prob-row { display: flex; align-items: center; gap: 5px; }
+.cv-prob-lbl { font-family: 'Inconsolata', monospace; font-size: 9px; color: var(--text-dim); width: 14px; text-align: right; flex-shrink: 0; }
+.cv-prob-track { flex: 1; height: 7px; background: rgba(255,85,0,0.06); border-radius: 2px; overflow: hidden; }
+.cv-prob-fill { height: 100%; border-radius: 2px; background: rgba(255,85,0,0.38); transition: width 0.7s ease; }
+.cv-prob-fill.answer { background: var(--quantum); }
+.cv-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+.cv-bottom-item { font-family: 'Rajdhani', sans-serif; font-size: 11px; text-align: center; padding: 3px; border-radius: 2px; }
+.cv-bottom-item.classical { color: rgba(42,159,214,0.7); background: rgba(42,159,214,0.04); }
+.cv-bottom-item.quantum   { color: rgba(0,232,122,0.8); background: rgba(0,232,122,0.04); }
+
+/* ── S1.2 SCALE BAR ── */
+.scale-bar-wrap { margin-top: 12px; }
+.scale-bar-header { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+.scale-bar-track { position: relative; height: 10px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,0.04); }
+.scale-bar-classical { position: absolute; left: 0; top: 0; height: 100%; width: 93%; background: linear-gradient(90deg, rgba(42,159,214,0.12), rgba(42,159,214,0.45)); border-radius: 3px 0 0 3px; }
+.scale-bar-quantum   { position: absolute; right: 0; top: 0; height: 100%; width: 7%; background: linear-gradient(90deg, rgba(255,85,0,0.5), rgba(255,85,0,0.95)); border-radius: 0 3px 3px 0; }
+.scale-bar-labels { position: relative; height: 28px; margin-top: 2px; }
+.scale-bar-lbl-c { position: absolute; left: 0; top: 0; font-family: 'Inconsolata', monospace; font-size: 9px; color: rgba(42,159,214,0.75); line-height: 1.3; }
+.scale-bar-lbl-q { position: absolute; right: 0; top: 0; font-family: 'Inconsolata', monospace; font-size: 9px; color: rgba(255,85,0,0.9); line-height: 1.3; text-align: right; }
+.scale-bar-note { margin-top: 4px; font-family: 'Rajdhani', sans-serif; font-size: 11px; color: var(--text-dim); text-align: center; font-style: italic; }
+
+/* ── S1.3 ESCAPE PARTICLES (SVG overlay) ── */
+#escapeParticles { opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+#escapeParticles.active { opacity: 1; }
+
+/* ── ACCESSIBILITY: focus rings ── */
+:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 01 / 06</div>
+    <h1>THE <span>VAULT</span></h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge"><span class="sim-dot"></span> INTERACTIVE</div>
+  </div>
+</header>
+
+<!-- PHASE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper" id="phaseStepper">
+    <div class="step-phase era-safe" id="phase0">
+      <div class="step-phase-dot"></div>
+      <div class="step-phase-label">TODAY</div>
+    </div>
+    <div class="step-phase-line" id="pline0"></div>
+    <div class="step-phase era-safe" id="phase1">
+      <div class="step-phase-dot"></div>
+      <div class="step-phase-label">RSA KEY</div>
+    </div>
+    <div class="step-phase-line" id="pline1"></div>
+    <div class="step-phase era-amber" id="phase2">
+      <div class="step-phase-dot"></div>
+      <div class="step-phase-label">KEY SIZES</div>
+    </div>
+    <div class="step-phase-line" id="pline2"></div>
+    <div class="step-phase era-threat" id="phase3">
+      <div class="step-phase-dot"></div>
+      <div class="step-phase-label">ATTACK</div>
+    </div>
+    <div class="step-phase-line" id="pline3"></div>
+    <div class="step-phase era-threat" id="phase4">
+      <div class="step-phase-dot"></div>
+      <div class="step-phase-label">VERDICT</div>
+    </div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar" id="narrativeBar">
+  <div class="narr-cell" id="nc-left">
+    <div class="narr-label blue" id="nl-left">THE LOCK TODAY</div>
+    <div class="narr-text" id="nt-left">Your encrypted data is protected by a <strong>mathematical padlock</strong> — built on a problem so hard, no computer alive can crack it.</div>
+  </div>
+  <div class="narr-cell" id="nc-mid">
+    <div class="narr-label" id="nl-mid">WHY IT'S SAFE</div>
+    <div class="narr-text" id="nt-mid">Multiplying two numbers together is easy. <strong>Working backwards</strong> from the result to find the originals? That takes <em>billions of years</em>.</div>
+  </div>
+  <div class="narr-cell" id="nc-right">
+    <div class="narr-label" id="nl-right">THE PROBLEM</div>
+    <div class="narr-text" id="nt-right">Quantum computers <strong>don't brute-force the lock</strong> — they find the underlying pattern instantly. The math that kept us safe <span class="danger">stops working.</span></div>
+  </div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+
+  <!-- LEFT PANEL — CLASSICAL -->
+  <div class="panel panel-left" id="panelLeft">
+    <div class="panel-era">CLASSICAL SECURITY</div>
+    <div class="panel-title blue">TODAY'S LOCK</div>
+    <div class="panel-sub">RSA &amp; ECC — protecting everything</div>
+
+    <!-- Classical Vault SVG -->
+    <div class="vault-area">
+      <svg id="classicalVault" viewBox="0 0 220 200" width="220" height="200" role="img" aria-label="Classical vault — secured by RSA encryption">
+        <rect x="30" y="30" width="160" height="150" rx="12" fill="#0d1020" stroke="rgba(42,159,214,0.3)" stroke-width="1.5"/>
+        <g id="vaultDoor">
+          <rect id="classicVaultDoor" x="55" y="50" width="110" height="115" rx="8" fill="#111830" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+          <circle cx="68" cy="70"  r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="68" cy="100" r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="68" cy="130" r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="152" cy="70"  r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="152" cy="100" r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="152" cy="130" r="5" fill="#0d1828" stroke="rgba(42,159,214,0.4)" stroke-width="1"/>
+          <circle cx="110" cy="107" r="34" fill="#0a1020" stroke="rgba(42,159,214,0.35)" stroke-width="1.5" class="dial-ring-outer spinning-slow"/>
+          <g class="dial-ring-outer spinning-slow">
+            <line x1="110" y1="75"  x2="110" y2="80"  stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+            <line x1="110" y1="134" x2="110" y2="139" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+            <line x1="76"  y1="107" x2="81"  y2="107" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+            <line x1="139" y1="107" x2="144" y2="107" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+            <line x1="86"  y1="83"  x2="90"  y2="87"  stroke="rgba(42,159,214,0.3)" stroke-width="1"/>
+            <line x1="130" y1="127" x2="134" y2="131" stroke="rgba(42,159,214,0.3)" stroke-width="1"/>
+            <line x1="86"  y1="131" x2="90"  y2="127" stroke="rgba(42,159,214,0.3)" stroke-width="1"/>
+            <line x1="130" y1="87"  x2="134" y2="83"  stroke="rgba(42,159,214,0.3)" stroke-width="1"/>
+          </g>
+          <circle cx="110" cy="107" r="24" fill="#0d1530" stroke="rgba(42,159,214,0.25)" stroke-width="1" class="dial-ring-mid spinning-rev"/>
+          <circle cx="110" cy="107" r="13" fill="#0a1020" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+          <circle cx="110" cy="107" r="3"  fill="var(--safe-glow)"/>
+          <line id="dialHand" x1="110" y1="107" x2="110" y2="88" stroke="var(--safe-glow)" stroke-width="2" stroke-linecap="round"/>
+          <rect id="classicLock" x="101" y="57" width="18" height="12" rx="2" fill="rgba(42,159,214,0.2)" stroke="rgba(42,159,214,0.5)" stroke-width="1"/>
+          <path id="classicLockShackle" d="M104,57 Q104,50 110,50 Q116,50 116,57" fill="none" stroke="rgba(42,159,214,0.5)" stroke-width="1.5"/>
+          <rect id="classicFlashRect" x="55" y="50" width="110" height="115" rx="8" fill="rgba(255,34,25,0.0)" stroke="none"/>
+        </g>
+        <rect x="30" y="60"  width="8" height="14" rx="2" fill="#1a2540" stroke="rgba(42,159,214,0.2)" stroke-width="1"/>
+        <rect x="30" y="110" width="8" height="14" rx="2" fill="#1a2540" stroke="rgba(42,159,214,0.2)" stroke-width="1"/>
+        <text id="classicStatusLabel" x="110" y="192" text-anchor="middle" font-family="'Inconsolata', monospace" font-weight="bold" font-size="12" fill="rgba(42,159,214,0.5)" letter-spacing="2">SECURED</text>
+      </svg>
+    </div>
+
+    <div class="step-section" id="section-l0">
+      <div class="info-card blue-card" id="card-l1">
+        <div class="card-label blue">HOW IT WORKS</div>
+        <div class="card-desc">RSA locks data with two giant prime numbers multiplied together. <strong>Sharing the product is safe</strong> — but finding the original numbers from it is practically impossible for any classical computer.</div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-l1">
+      <div class="info-card blue-card" id="card-l2">
+        <div class="card-label">BRUTE FORCE ATTEMPTS</div>
+        <div class="bf-rows" id="bfRows">
+          <div class="bf-row fail" id="bf1">
+            <div class="bf-bar" id="bf1bar"></div>
+            <div class="bf-dot"></div>
+            <div class="bf-text">Try 47 × 43 = 2021</div>
+            <div class="bf-result">✗</div>
+          </div>
+          <div class="bf-row fail" id="bf2">
+            <div class="bf-bar" id="bf2bar"></div>
+            <div class="bf-dot"></div>
+            <div class="bf-text">Try 53 × 41 = 2173</div>
+            <div class="bf-result">✗</div>
+          </div>
+          <div class="bf-row pass" id="bf3">
+            <div class="bf-bar" id="bf3bar"></div>
+            <div class="bf-dot"></div>
+            <div class="bf-text">Try 53 × 61 = 3233 ✓</div>
+            <div class="bf-result">MATCH</div>
+          </div>
+          <div class="bf-row dim" id="bf4">
+            <div class="bf-dot"></div>
+            <div class="bf-text"><strong style="color:#fff;">But RSA-2048 has 617-digit numbers…</strong></div>
+          </div>
+          <div class="bf-row dim" id="bf5">
+            <div class="bf-dot"></div>
+            <div class="bf-text"><strong style="color:#fff;">Combinations: more than atoms in the universe</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-l2">
+      <div class="info-card red-card" id="card-l3">
+        <div class="card-label red">CLASSICAL CRACK TIME</div>
+        <div class="card-value red">~300 TRILLION YRS</div>
+        <div class="card-desc">Time to factor a 2048-bit RSA key on the fastest supercomputer alive. <strong>The math is simply too hard</strong> — classically.</div>
+      </div>
+      <div class="key-table" id="keyTable">
+        <table>
+          <thead>
+            <tr>
+              <th>KEY SIZE</th>
+              <th>USED FOR</th>
+              <th>CLASSICAL CRACK</th>
+              <th>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1024-bit</td>
+              <td>Legacy systems</td>
+              <td class="crack-time">~1 year (today)</td>
+              <td class="status-bad">RETIRED</td>
+            </tr>
+            <tr class="highlight">
+              <td>2048-bit</td>
+              <td>Most internet traffic</td>
+              <td class="crack-time safe">300 trillion yrs</td>
+              <td class="status-warn">AT RISK</td>
+            </tr>
+            <tr>
+              <td>4096-bit</td>
+              <td>High-security systems</td>
+              <td class="crack-time safe">Effectively forever</td>
+              <td class="status-warn">AT RISK</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-l3">
+      <div class="cv-wrap">
+        <div class="cv-header">HOW EACH APPROACH WORKS</div>
+        <div class="cv-cols">
+          <div class="cv-col classical">
+            <div class="cv-col-title">Classical</div>
+            <div class="cv-seq">
+              <div class="cv-seq-row" id="cvr0">□ candidate 1</div>
+              <div class="cv-seq-row" id="cvr1">□ candidate 2</div>
+              <div class="cv-seq-row" id="cvr2">□ candidate 3</div>
+              <div class="cv-seq-row" id="cvr3">□ candidate 4</div>
+              <div class="cv-seq-row" id="cvr4">□ candidate 5</div>
+            </div>
+          </div>
+          <div class="cv-col quantum">
+            <div class="cv-col-title">Quantum</div>
+            <div class="cv-prob">
+              <div class="cv-prob-row"><div class="cv-prob-lbl">A</div><div class="cv-prob-track"><div class="cv-prob-fill"        id="cpb0" style="width:35%"></div></div></div>
+              <div class="cv-prob-row"><div class="cv-prob-lbl">B</div><div class="cv-prob-track"><div class="cv-prob-fill answer" id="cpb1" style="width:55%"></div></div></div>
+              <div class="cv-prob-row"><div class="cv-prob-lbl">C</div><div class="cv-prob-track"><div class="cv-prob-fill"        id="cpb2" style="width:20%"></div></div></div>
+              <div class="cv-prob-row"><div class="cv-prob-lbl">D</div><div class="cv-prob-track"><div class="cv-prob-fill"        id="cpb3" style="width:28%"></div></div></div>
+              <div class="cv-prob-row"><div class="cv-prob-lbl">E</div><div class="cv-prob-track"><div class="cv-prob-fill"        id="cpb4" style="width:12%"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cv-bottom">
+          <div class="cv-bottom-item classical">Checks 1 at a time — N trials</div>
+          <div class="cv-bottom-item quantum">Interference → 1 answer</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-section" id="section-l4">
+      <div class="info-card red-card" id="card-l4">
+        <div class="card-label red">CLASSICAL CRACK TIME</div>
+        <div class="card-value red">~300 TRILLION YRS</div>
+        <div class="card-desc">On the best supercomputer alive — RSA-2048 is safe classically. <strong>But quantum changes everything.</strong></div>
+      </div>
+      <div class="scale-bar-wrap">
+        <div class="scale-bar-header">TIME TO CRACK RSA-2048</div>
+        <div class="scale-bar-track">
+          <div class="scale-bar-classical"></div>
+          <div class="scale-bar-quantum"></div>
+        </div>
+        <div class="scale-bar-labels">
+          <div class="scale-bar-lbl-c">Classical<br>~300 trillion yrs</div>
+          <div class="scale-bar-lbl-q">CRQC<br>hours</div>
+        </div>
+        <div class="scale-bar-note">Same key · same data · different tools</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER DIVIDER -->
+  <div class="vs-divider">
+    <div class="vs-line"></div>
+    <div class="vs-badge">VS</div>
+    <div class="vs-line"></div>
+  </div>
+
+  <!-- RIGHT PANEL — QUANTUM -->
+  <div class="panel panel-right" id="panelRight">
+    <div class="panel-era">QUANTUM THREAT</div>
+    <div class="panel-title red">QUANTUM LOCKPICK</div>
+    <div class="panel-sub">Shor's Algorithm — 1994</div>
+
+    <!-- Quantum Vault SVG -->
+    <div class="vault-area">
+      <svg id="quantumVault" viewBox="0 0 220 200" width="220" height="200" role="img" aria-label="Quantum vault — vulnerable to Shor's algorithm">
+        <rect x="30" y="30" width="160" height="150" rx="12" fill="#120808" stroke="rgba(255,85,0,0.2)" stroke-width="1.5"/>
+        <g id="qVaultDoor">
+          <rect x="55" y="50" width="110" height="115" rx="8" fill="#1a0a0a" stroke="rgba(255,85,0,0.3)" stroke-width="1.5"/>
+          <circle cx="68"  cy="70"  r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="68"  cy="100" r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="68"  cy="130" r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="152" cy="70"  r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="152" cy="100" r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="152" cy="130" r="5" fill="#180808" stroke="rgba(255,85,0,0.3)" stroke-width="1" class="q-bolt"/>
+          <circle cx="110" cy="107" r="34" fill="#100808" stroke="rgba(255,85,0,0.2)" stroke-width="1"/>
+          <ellipse cx="110" cy="107" rx="28" ry="10" fill="none" stroke="rgba(0,232,122,0.15)" stroke-width="1" transform="rotate(-30, 110, 107)"/>
+          <ellipse cx="110" cy="107" rx="28" ry="10" fill="none" stroke="rgba(0,232,122,0.15)" stroke-width="1" transform="rotate(30, 110, 107)"/>
+          <ellipse cx="110" cy="107" rx="28" ry="10" fill="none" stroke="rgba(0,232,122,0.15)" stroke-width="1"/>
+          <circle cx="110" cy="107" r="6" fill="rgba(0,232,122,0.3)" stroke="var(--quantum)" stroke-width="1.5"/>
+          <circle cx="110" cy="107" r="2" fill="var(--quantum)"/>
+          <circle id="orb1" cx="138" cy="107" r="3" fill="var(--quantum)" opacity="0.8"/>
+          <circle id="orb2" cx="82"  cy="107" r="3" fill="var(--quantum)" opacity="0.8"/>
+          <circle id="orb3" cx="110" cy="79"  r="2.5" fill="rgba(0,232,122,0.6)" opacity="0.7"/>
+          <rect x="101" y="57" width="18" height="12" rx="2" fill="rgba(255,85,0,0.15)" stroke="rgba(255,85,0,0.4)" stroke-width="1" id="qLock"/>
+          <path id="qLockShackle" d="M104,57 Q104,50 110,50 Q116,50 116,57" fill="none" stroke="rgba(255,85,0,0.4)" stroke-width="1.5"/>
+          <rect id="qFlashRect" x="55" y="50" width="110" height="115" rx="8" fill="rgba(0,232,122,0.0)" stroke="none"/>
+        </g>
+        <rect x="30" y="60"  width="8" height="14" rx="2" fill="#2a1010" stroke="rgba(255,85,0,0.2)" stroke-width="1"/>
+        <rect x="30" y="110" width="8" height="14" rx="2" fill="#2a1010" stroke="rgba(255,85,0,0.2)" stroke-width="1"/>
+        <text x="110" y="192" text-anchor="middle" font-family="'Inconsolata', monospace" font-weight="bold" font-size="12" fill="rgba(255,85,0,0.4)" letter-spacing="2" id="qStatusLabel">WAITING...</text>
+        <!-- S1.3: data escape particles — shown when vault is DECRYPTED -->
+        <g id="escapeParticles">
+          <circle cx="110" cy="107" r="2.5" fill="var(--quantum)">
+            <animateMotion dur="1.6s" repeatCount="indefinite" begin="0s"   path="M0,0 L-55,-70"/>
+            <animate attributeName="opacity" values="0.9;0" dur="1.6s" repeatCount="indefinite" begin="0s"/>
+            <animate attributeName="r"       values="2.5;0" dur="1.6s" repeatCount="indefinite" begin="0s"/>
+          </circle>
+          <circle cx="110" cy="107" r="2" fill="rgba(0,232,122,0.8)">
+            <animateMotion dur="1.4s" repeatCount="indefinite" begin="0.3s" path="M0,0 L40,-65"/>
+            <animate attributeName="opacity" values="0.8;0" dur="1.4s" repeatCount="indefinite" begin="0.3s"/>
+            <animate attributeName="r"       values="2;0"   dur="1.4s" repeatCount="indefinite" begin="0.3s"/>
+          </circle>
+          <circle cx="110" cy="107" r="1.5" fill="rgba(0,232,122,0.6)">
+            <animateMotion dur="1.8s" repeatCount="indefinite" begin="0.6s" path="M0,0 L-30,-80"/>
+            <animate attributeName="opacity" values="0.7;0" dur="1.8s" repeatCount="indefinite" begin="0.6s"/>
+            <animate attributeName="r"       values="1.5;0" dur="1.8s" repeatCount="indefinite" begin="0.6s"/>
+          </circle>
+          <rect x="108" y="105" width="5" height="2" rx="1" fill="rgba(0,232,122,0.7)">
+            <animateMotion dur="1.5s" repeatCount="indefinite" begin="0.9s" path="M0,0 L60,-55"/>
+            <animate attributeName="opacity" values="0.7;0" dur="1.5s" repeatCount="indefinite" begin="0.9s"/>
+          </rect>
+          <rect x="108" y="105" width="4" height="2" rx="1" fill="rgba(0,232,122,0.5)">
+            <animateMotion dur="2s"   repeatCount="indefinite" begin="1.2s" path="M0,0 L-70,-40"/>
+            <animate attributeName="opacity" values="0.6;0" dur="2s"   repeatCount="indefinite" begin="1.2s"/>
+          </rect>
+          <circle cx="110" cy="107" r="1.5" fill="rgba(0,232,122,0.5)">
+            <animateMotion dur="1.3s" repeatCount="indefinite" begin="1.5s" path="M0,0 L20,-75"/>
+            <animate attributeName="opacity" values="0.6;0" dur="1.3s" repeatCount="indefinite" begin="1.5s"/>
+            <animate attributeName="r"       values="1.5;0" dur="1.3s" repeatCount="indefinite" begin="1.5s"/>
+          </circle>
+        </g>
+      </svg>
+    </div>
+
+    <div class="step-section" id="section-r0">
+      <div class="info-card red-card" id="card-r1">
+        <div class="card-label red">THE QUANTUM DIFFERENCE</div>
+        <div class="card-desc">A classical computer tries combinations <strong>one at a time</strong>. A quantum computer uses superposition and interference to make the <strong>correct answer exponentially more probable</strong> — then measures it.</div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-r1">
+      <div class="info-card red-card" id="card-r1b">
+        <div class="card-label red">WHY SIZE DOESN'T SAVE YOU</div>
+        <div class="card-desc">Even the largest classical keys depend on the same hard math. <strong>More digits, same vulnerability</strong> — once a quantum computer can factor at all, key size is irrelevant.</div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-r2">
+      <div class="info-card red-card" id="card-r2">
+        <div class="card-label red">⚠ KEY SIZES DON'T HELP</div>
+        <div class="card-desc">Classical security doubles with every added bit. <strong>Quantum security doesn't.</strong> Shor's algorithm handles 2048-bit and 4096-bit keys with essentially the same ease.</div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-r3">
+      <div class="q-steps" id="qSteps">
+        <div class="card-label" style="margin-bottom:2px; font-family:'Inconsolata',monospace; font-size:12px; letter-spacing:2px; color:var(--text-dim);">SHOR'S ALGORITHM — HOW IT WORKS</div>
+        <div class="q-step" id="qs1">
+          <div class="q-step-num">1</div>
+          <div class="q-step-content">
+            <div class="q-step-title">SUPERPOSITION</div>
+            <div class="q-step-desc">All possible factor combinations are explored at once — not one by one</div>
+          </div>
+        </div>
+        <div class="q-step" id="qs2">
+          <div class="q-step-num">2</div>
+          <div class="q-step-content">
+            <div class="q-step-title">FIND THE PATTERN</div>
+            <div class="q-step-desc">Quantum Fourier Transform reveals the hidden repeating structure in the number</div>
+          </div>
+        </div>
+        <div class="q-step" id="qs3">
+          <div class="q-step-num">3</div>
+          <div class="q-step-content">
+            <div class="q-step-title">EXTRACT THE KEY</div>
+            <div class="q-step-desc">The pattern points directly to the two prime factors — the private key collapses out</div>
+          </div>
+        </div>
+        <div class="q-step" id="qs4">
+          <div class="q-step-num">4</div>
+          <div class="q-step-content">
+            <div class="q-step-title">LOCK OPEN</div>
+            <div class="q-step-desc">What takes classical computers trillions of years — takes a CRQC <strong style="color:var(--threat-glow)">hours to days</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-section" id="section-r4">
+      <div class="info-card green-card" id="card-r3">
+        <div class="card-label green">QUANTUM CRACK TIME</div>
+        <div class="card-value green">HOURS — DAYS</div>
+        <div class="card-desc">Same RSA-2048 key. Same data. A cryptographically relevant quantum computer (CRQC) using Shor's algorithm. <strong>All key sizes fall.</strong></div>
+      </div>
+      <div class="info-card amber-card" id="card-r4">
+        <div class="card-label amber">⚠ ALL KEY SIZES ARE VULNERABLE</div>
+        <div class="card-desc">Unlike classical attacks, making keys bigger <strong>doesn't help</strong>. Shor's algorithm scales efficiently — 2048-bit and 4096-bit keys both fall. The entire RSA &amp; ECC foundation breaks.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM HOOK BAR -->
+<div class="hook-bar" id="hookBar">
+  <div class="hook-icon">⚠</div>
+  <div class="hook-text">
+    <strong>The encryption protecting your bank, email, and VPN is built on this lock.</strong>
+    <span> A quantum computer reduces a 300-trillion-year problem to hours. Every key size falls.</span>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevStep()" disabled aria-label="Previous step">◀ PREV</button>
+  <div class="step-dots" id="stepDots" role="presentation"></div>
+  <button class="ctrl-btn primary" id="btnNext" onclick="nextStep()" aria-label="Next step">NEXT ▶</button>
+  <button class="ctrl-btn" onclick="resetScene()" style="margin-left:8px;" aria-label="Reset scene">⟳ RESET</button>
+</div>
+
+<script>
+// STATE
+let currentStep = 0;
+const TOTAL_STEPS = 5;
+let orbAngle = 0;
+let orbAnimId = null;
+
+// STEP DEFINITIONS
+const steps = [
+  // STEP 0 — The Lock Today
+  {
+    bfShow: false,
+    qStepsLit: [],
+    hookBar: false,
+    qVaultOpen: false,
+    qVaultStatus: 'WAITING...',
+    narrative: {
+      left:  { label: 'THE LOCK TODAY',   cls: 'blue',  text: 'Your encrypted data is protected by a <strong>mathematical padlock</strong> — built on a problem so hard, no computer alive can crack it.' },
+      mid:   { label: 'WHY IT WORKS',     cls: '',      text: 'RSA and ECC encryption are the backbone of <strong>TLS, banking, VPNs, and email</strong>. Every secure website you visit uses this today.' },
+      right: { label: 'THE QUESTION',     cls: '',      text: 'A quantum computer doesn\'t play by the same rules. <strong>What happens to the lock</strong> when the rules change?' },
+    }
+  },
+  // STEP 1 — Why it's hard classically
+  {
+    bfShow: true,
+    qStepsLit: [],
+    hookBar: false,
+    qVaultOpen: false,
+    qVaultStatus: 'WAITING...',
+    narrative: {
+      left:  { label: 'THE HARD PROBLEM',  cls: 'blue', text: 'Multiplying two primes together is instant. <em>Working backwards</em> to find them from the result? Even the fastest supercomputers fail.' },
+      mid:   { label: 'BY THE NUMBERS',    cls: '',     text: 'RSA-2048 keys are built from <strong>617-digit numbers</strong>. Cracking one classically would take longer than the age of the universe.' },
+      right: { label: 'SO FAR, SO SAFE',   cls: '',     text: 'Classical computers try combinations <strong>one at a time</strong>. No matter how fast they get, the math stays ahead.' },
+    }
+  },
+  // STEP 2 — Key sizes
+  {
+    bfShow: false,
+    qStepsLit: [],
+    hookBar: false,
+    qVaultOpen: false,
+    qVaultStatus: 'WAITING...',
+    narrative: {
+      left:  { label: 'KEY SIZE MATTERS',        cls: 'blue', text: 'Bigger keys = harder to crack. <strong>RSA-2048 is the current standard.</strong> 4096-bit exists for the most sensitive systems.' },
+      mid:   { label: 'CLASSICAL SECURITY',      cls: '',     text: 'For classical computers, each added bit <strong>doubles the difficulty</strong>. This is why key sizes have grown over decades.' },
+      right: { label: "BUT THERE'S A CATCH",     cls: 'red',  text: 'This doubling trick only works against <span class="danger">classical brute force.</span> Quantum algorithms break the pattern entirely.' },
+    }
+  },
+  // STEP 3 — Quantum arrives
+  {
+    bfShow: false,
+    qStepsLit: [0, 1, 2, 3],
+    hookBar: false,
+    qVaultOpen: false,
+    qVaultStatus: 'RUNNING...',
+    narrative: {
+      left:  { label: 'SAME VAULT',            cls: 'blue', text: 'The lock hasn\'t changed. The data is still protected by the same math. <strong>But the attacker just got very different tools.</strong>' },
+      mid:   { label: "SHOR'S ALGORITHM",      cls: '',     text: 'In 1994, mathematician Peter Shor proved that a quantum computer can factor large numbers <strong>exponentially faster</strong> than any classical machine.' },
+      right: { label: 'HOW IT BREAKS IN',      cls: 'red',  text: 'Instead of trying every combination, Shor\'s algorithm <span class="danger">finds the hidden structure</span> in the number — and reads the key directly.' },
+    }
+  },
+  // STEP 4 — The gap
+  {
+    bfShow: false,
+    qStepsLit: [0, 1, 2, 3],
+    hookBar: true,
+    qVaultOpen: true,
+    classicBreached: true,
+    qVaultStatus: 'DECRYPTED',
+    narrative: {
+      left:  { label: 'CLASSICAL REALITY',     cls: 'blue', text: 'On the best supercomputer today, breaking RSA-2048 would take <em>300 trillion years</em>. Classically, the vault is safe.' },
+      mid:   { label: 'THE GAP',               cls: 'red',  text: '<strong>Same lock. Same key.</strong> A cryptographically relevant quantum computer (CRQC) reduces that to <span class="danger">hours — or days.</span>' },
+      right: { label: 'NO SAFE KEY SIZE',      cls: 'red',  text: 'Making keys bigger <span class="danger">does not help</span> against Shor\'s algorithm. RSA and ECC are fundamentally broken by quantum — at any key size.' },
+    }
+  },
+];
+
+// BUILD STEP DOTS
+function buildDots() {
+  const dots = document.getElementById('stepDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === 0 ? ' active' : '');
+    d.id = 'dot' + i;
+    dots.appendChild(d);
+  }
+}
+
+// UPDATE PHASE STEPPER
+function updatePhaseStepper(idx) {
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const phase = document.getElementById('phase' + i);
+    if (phase) phase.classList.toggle('active', i === idx);
+    if (i < TOTAL_STEPS - 1) {
+      const line = document.getElementById('pline' + i);
+      if (line) {
+        line.classList.remove('line-active-amber', 'line-active-threat');
+        if (i < idx) {
+          if (i >= 2) line.classList.add('line-active-threat');
+          else if (i >= 1) line.classList.add('line-active-amber');
+        }
+      }
+    }
+  }
+}
+
+// APPLY STEP
+function applyStep(idx) {
+  const s = steps[idx];
+
+  updateNarrative(s.narrative);
+  updatePhaseStepper(idx);
+
+  if (s.bfShow) {
+    animateBfBars();
+  } else {
+    document.getElementById('bf1bar').style.width = '0';
+    document.getElementById('bf2bar').style.width = '0';
+    document.getElementById('bf3bar').style.width = '0';
+  }
+
+  [0,1,2,3].forEach(function(i) {
+    const el = document.getElementById('qs' + (i+1));
+    if (!el) return;
+    const shouldLit = s.qStepsLit.includes(i);
+    if (shouldLit && !el.classList.contains('lit')) {
+      setTimeout(function() { el.classList.add('lit'); }, i * 220);
+    } else if (!shouldLit) {
+      el.classList.remove('lit');
+    }
+  });
+
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+  document.body.classList.toggle('hook-visible', s.hookBar);
+  if (s.hookBar) {
+    const hookEl = document.getElementById('hookBar');
+    const animEl = hookEl.querySelector('p, .hook-text, .marquee');
+    if (animEl) {
+      animEl.style.animation = 'none';
+      void animEl.offsetHeight; // force reflow
+      animEl.style.animation = '';
+    }
+  }
+
+  const qDoor = document.getElementById('qVaultDoor');
+  if (s.qVaultOpen && !qDoor.classList.contains('open')) {
+    flashQVault();
+    setTimeout(function() { openQVault(); }, 600);
+  } else if (!s.qVaultOpen) {
+    closeQVault();
+  }
+
+  if (s.classicBreached) {
+    flashClassicVault();
+    setTimeout(function() { breachClassicVault(); }, 600);
+  } else {
+    resetClassicVault();
+  }
+
+  document.getElementById('qStatusLabel').textContent = s.qVaultStatus;
+  document.getElementById('qStatusLabel').setAttribute('fill',
+    s.qVaultOpen ? 'rgba(0,232,122,0.7)' : 'rgba(255,85,0,0.4)'
+  );
+
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const d = document.getElementById('dot' + i);
+    if (!d) continue;
+    d.classList.remove('active','done');
+    if (i === idx)   d.classList.add('active');
+    if (i < idx)     d.classList.add('done');
+  }
+
+  document.getElementById('btnPrev').disabled = (idx === 0);
+  const isLast = idx === TOTAL_STEPS - 1;
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('btnNext').textContent = isLast ? '→ SCENE 02' : 'NEXT ▶';
+
+  document.querySelectorAll('.step-section').forEach(function(el) { el.classList.remove('active'); });
+  const leftSection  = document.getElementById('section-l' + idx);
+  const rightSection = document.getElementById('section-r' + idx);
+  if (leftSection)  leftSection.classList.add('active');
+  if (rightSection) rightSection.classList.add('active');
+  // S1.1: run comparison animation only on step 3 (Quantum arrives)
+  if (idx === 3) {
+    setTimeout(startCVAnimation, 400);
+  } else {
+    stopCVAnimation();
+  }
+
+  document.querySelector('.panel-right').scrollTo({ top: 0, behavior: 'smooth' });
+  if (idx === 4) {
+    const cardL4 = document.getElementById('card-l4');
+    if (cardL4) cardL4.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    document.querySelector('.panel-left').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function updateNarrative(n) {
+  const nlLeft = document.getElementById('nl-left');
+  const ntLeft = document.getElementById('nt-left');
+  const ncLeft = document.getElementById('nc-left');
+  nlLeft.textContent = n.left.label;
+  nlLeft.className = 'narr-label ' + (n.left.cls || '');
+  ntLeft.innerHTML = n.left.text;
+  ncLeft.className = 'narr-cell' + (n.left.cls === 'blue' ? ' active' : n.left.cls === 'red' ? ' active-threat' : '');
+
+  const nlMid = document.getElementById('nl-mid');
+  const ntMid = document.getElementById('nt-mid');
+  const ncMid = document.getElementById('nc-mid');
+  nlMid.textContent = n.mid.label;
+  nlMid.className = 'narr-label ' + (n.mid.cls || '');
+  ntMid.innerHTML = n.mid.text;
+  ncMid.className = 'narr-cell' + (n.mid.cls === 'red' ? ' active-threat' : '');
+
+  const nlRight = document.getElementById('nl-right');
+  const ntRight = document.getElementById('nt-right');
+  const ncRight = document.getElementById('nc-right');
+  nlRight.textContent = n.right.label;
+  nlRight.className = 'narr-label ' + (n.right.cls || '');
+  ntRight.innerHTML = n.right.text;
+  ncRight.className = 'narr-cell' + (n.right.cls === 'red' ? ' active-threat' : n.right.cls === 'green' ? ' active-quantum' : '');
+}
+
+// S1.1 — COMPARISON VISUAL ANIMATION
+var cvSeqTimer = null;
+var cvCollapseTimer = null;
+var cvSeqIdx = 0;
+
+function startCVAnimation() {
+  stopCVAnimation();
+  cvSeqIdx = 0;
+  // Classical: cycle through rows sequentially
+  function cycleRow() {
+    document.querySelectorAll('.cv-seq-row').forEach(function(r) { r.classList.remove('checking'); });
+    var row = document.getElementById('cvr' + cvSeqIdx);
+    if (row) row.classList.add('checking');
+    cvSeqIdx = (cvSeqIdx + 1) % 5;
+    cvSeqTimer = setTimeout(cycleRow, 680);
+  }
+  cycleRow();
+  // Quantum: reset to exploring state (distributed amplitudes)
+  [35, 55, 20, 28, 12].forEach(function(w, i) {
+    var el = document.getElementById('cpb' + i);
+    if (el) el.style.width = w + '%';
+  });
+  // After 2.4s, collapse: answer bar grows, others shrink
+  cvCollapseTimer = setTimeout(function() {
+    [4, 100, 3, 5, 2].forEach(function(w, i) {
+      var el = document.getElementById('cpb' + i);
+      if (el) el.style.width = w + '%';
+    });
+    // Reset to exploring state after another 1.8s (loop)
+    cvCollapseTimer = setTimeout(function() {
+      [35, 55, 20, 28, 12].forEach(function(w, i) {
+        var el = document.getElementById('cpb' + i);
+        if (el) el.style.width = w + '%';
+      });
+      cvCollapseTimer = setTimeout(startCVAnimation, 800);
+    }, 1800);
+  }, 2400);
+}
+
+function stopCVAnimation() {
+  if (cvSeqTimer)    { clearTimeout(cvSeqTimer);    cvSeqTimer    = null; }
+  if (cvCollapseTimer) { clearTimeout(cvCollapseTimer); cvCollapseTimer = null; }
+  document.querySelectorAll('.cv-seq-row').forEach(function(r) { r.classList.remove('checking'); });
+}
+
+// BRUTE FORCE BAR ANIMATION
+function animateBfBars() {
+  setTimeout(function() { document.getElementById('bf1bar').style.width = '80%'; }, 100);
+  setTimeout(function() { document.getElementById('bf2bar').style.width = '65%'; }, 300);
+  setTimeout(function() { document.getElementById('bf3bar').style.width = '100%'; }, 500);
+}
+
+// QUANTUM VAULT ANIMATIONS
+function flashQVault() {
+  const flash = document.getElementById('qFlashRect');
+  flash.setAttribute('fill', 'rgba(0,232,122,0.35)');
+  setTimeout(function() {
+    flash.setAttribute('fill', 'rgba(0,232,122,0.0)');
+  }, 300);
+  document.querySelectorAll('.q-bolt').forEach(function(b, i) {
+    setTimeout(function() {
+      b.setAttribute('fill', 'rgba(0,232,122,0.4)');
+      b.setAttribute('stroke', 'var(--quantum)');
+      setTimeout(function() { b.setAttribute('fill','#180808'); }, 400);
+    }, i * 60);
+  });
+  setTimeout(function() {
+    document.getElementById('qLock').setAttribute('fill', 'rgba(0,232,122,0.2)');
+    document.getElementById('qLock').setAttribute('stroke', 'var(--quantum)');
+    document.getElementById('qLockShackle').setAttribute('stroke', 'var(--quantum)');
+    document.getElementById('qLockShackle').setAttribute('d', 'M104,58 Q104,53 110,53 Q116,53 116,58');
+  }, 500);
+}
+
+function openQVault() {
+  const door = document.getElementById('qVaultDoor');
+  door.style.transition = 'transform 1s ease-in-out';
+  door.style.transform = 'perspective(300px) rotateY(-65deg)';
+  door.style.transformOrigin = '55px 107px';
+  // S1.3: show data escape particles
+  setTimeout(function() {
+    const ep = document.getElementById('escapeParticles');
+    if (ep) ep.classList.add('active');
+  }, 800);
+}
+
+function closeQVault() {
+  const door = document.getElementById('qVaultDoor');
+  door.style.transition = 'transform 0.5s ease';
+  door.style.transform = '';
+  // S1.3: hide escape particles
+  const ep = document.getElementById('escapeParticles');
+  if (ep) ep.classList.remove('active');
+  const qLock = document.getElementById('qLock');
+  if (qLock) {
+    qLock.setAttribute('fill','rgba(255,85,0,0.15)');
+    qLock.setAttribute('stroke','rgba(255,85,0,0.4)');
+  }
+  const shackle = document.getElementById('qLockShackle');
+  if (shackle) {
+    shackle.setAttribute('stroke','rgba(255,85,0,0.4)');
+    shackle.setAttribute('d','M104,57 Q104,50 110,50 Q116,50 116,57');
+  }
+  document.querySelectorAll('.q-bolt').forEach(function(b) {
+    b.setAttribute('fill','#180808');
+    b.setAttribute('stroke','rgba(255,85,0,0.3)');
+  });
+  const flash = document.getElementById('qFlashRect');
+  if (flash) flash.setAttribute('fill','rgba(0,232,122,0.0)');
+}
+
+// CLASSICAL VAULT BREACH
+function flashClassicVault() {
+  const flash = document.getElementById('classicFlashRect');
+  flash.setAttribute('fill', 'rgba(255,34,25,0.25)');
+  setTimeout(function() { flash.setAttribute('fill', 'rgba(255,34,25,0.0)'); }, 300);
+}
+
+function breachClassicVault() {
+  document.getElementById('classicVaultDoor').setAttribute('stroke', 'rgba(255,34,25,0.6)');
+  document.getElementById('classicLock').setAttribute('fill', 'rgba(255,34,25,0.2)');
+  document.getElementById('classicLock').setAttribute('stroke', 'rgba(255,34,25,0.6)');
+  document.getElementById('classicLockShackle').setAttribute('stroke', 'rgba(255,34,25,0.6)');
+  document.getElementById('classicLockShackle').setAttribute('d', 'M104,62 Q104,58 110,58 Q116,58 116,62');
+  const label = document.getElementById('classicStatusLabel');
+  label.textContent = 'BREACHED';
+  label.setAttribute('fill', 'rgba(255,34,25,0.9)');
+}
+
+function resetClassicVault() {
+  const door = document.getElementById('classicVaultDoor');
+  if (door) door.setAttribute('stroke', 'rgba(42,159,214,0.5)');
+  const lock = document.getElementById('classicLock');
+  if (lock) { lock.setAttribute('fill', 'rgba(42,159,214,0.2)'); lock.setAttribute('stroke', 'rgba(42,159,214,0.5)'); }
+  const shackle = document.getElementById('classicLockShackle');
+  if (shackle) { shackle.setAttribute('stroke', 'rgba(42,159,214,0.5)'); shackle.setAttribute('d', 'M104,57 Q104,50 110,50 Q116,50 116,57'); }
+  const flash = document.getElementById('classicFlashRect');
+  if (flash) flash.setAttribute('fill', 'rgba(255,34,25,0.0)');
+  const label = document.getElementById('classicStatusLabel');
+  if (label) { label.textContent = 'SECURED'; label.setAttribute('fill', 'rgba(42,159,214,0.5)'); }
+}
+
+// ORBIT ANIMATION
+function animateOrbits() {
+  orbAngle += 0.025;
+  const orb1 = document.getElementById('orb1');
+  const orb2 = document.getElementById('orb2');
+  const orb3 = document.getElementById('orb3');
+  if (!orb1) return;
+
+  const cx = 110, cy = 107, r = 28;
+  orb1.setAttribute('cx', cx + Math.cos(orbAngle) * r);
+  orb1.setAttribute('cy', cy + Math.sin(orbAngle) * r * 0.35);
+  orb2.setAttribute('cx', cx + Math.cos(orbAngle + Math.PI) * r);
+  orb2.setAttribute('cy', cy + Math.sin(orbAngle + Math.PI) * r * 0.35);
+  orb3.setAttribute('cx', cx + Math.cos(orbAngle * 0.7 + 1) * r * 0.9);
+  orb3.setAttribute('cy', cy + Math.sin(orbAngle * 0.7 + 1) * r);
+
+  orbAnimId = requestAnimationFrame(animateOrbits);
+}
+
+// DIAL HAND ANIMATION
+let dialAngle = 0;
+function animateDial() {
+  dialAngle += 1.5;
+  const hand = document.getElementById('dialHand');
+  if (!hand) return;
+  const cx = 110, cy = 107, r = 19;
+  const rad = (dialAngle * Math.PI) / 180;
+  hand.setAttribute('x2', cx + Math.sin(rad) * r);
+  hand.setAttribute('y2', cy - Math.cos(rad) * r);
+  requestAnimationFrame(animateDial);
+}
+
+// NAV
+function nextStep() {
+  if (currentStep < TOTAL_STEPS - 1) {
+    applyStep(++currentStep);
+  } else {
+    window.location.href = 'scene2_shors_interactive.html';
+  }
+}
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    applyStep(currentStep);
+  }
+}
+function resetScene() {
+  currentStep = 0;
+  closeQVault();
+  document.getElementById('bf1bar').style.width = '0';
+  document.getElementById('bf2bar').style.width = '0';
+  document.getElementById('bf3bar').style.width = '0';
+  [0,1,2,3].forEach(function(i) {
+    const el = document.getElementById('qs'+(i+1));
+    if (el) el.classList.remove('lit');
+  });
+  applyStep(0);
+}
+
+// INIT
+buildDots();
+applyStep(0);
+animateOrbits();
+animateDial();
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') nextStep();
+  if (e.key === 'ArrowLeft') prevStep();
+});
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

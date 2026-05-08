@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lattice Wall — PQC Demo Scene 04</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--quantum);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 35px;
+  letter-spacing: 3px;
+  color: #fff;
+}
+header h1 span { color: var(--quantum); }
+.sim-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.sim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--quantum);
+  flex-shrink: 0;
+  animation: sim-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,232,122,0.4); }
+  50%       { opacity: 0.6; box-shadow: 0 0 0 4px rgba(0,232,122,0); }
+}
+.now-halo {
+  animation: now-halo-pulse 2s ease-in-out infinite;
+}
+@keyframes now-halo-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.05; }
+}
+
+/* ── PHASE STEPPER ── */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.step-dot-phase {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.step-label-phase {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.step-line-phase {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+.step.quantum-step.active .step-dot-phase  { background: var(--quantum);     border-color: var(--quantum);     box-shadow: 0 0 8px var(--quantum); }
+.step.quantum-step.active .step-label-phase { color: var(--quantum); }
+.step.threat-step.active  .step-dot-phase  { background: var(--threat-glow); border-color: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+.step.threat-step.active  .step-label-phase { color: var(--threat-glow); }
+
+/* ── NARRATIVE BAR ── */
+.narrative-bar {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  padding: 12px 32px;
+  min-height: 95px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.narr-step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--quantum);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.narr-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.narr-body { flex: 1; }
+.narr-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.narr-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.92);
+}
+.narr-text strong { color: var(--text); font-weight: 600; }
+.narr-text em     { color: var(--quantum); font-style: normal; font-weight: 600; }
+.narr-text .danger { color: var(--threat-glow); font-weight: 600; }
+
+/* ── STAGE ── */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── LEFT: LATTICE CANVAS ── */
+.lattice-panel {
+  flex: 0 0 52%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+  margin: 12px 6px 12px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  border-top: 3px solid var(--quantum);
+  transition: border-top-color 0.4s ease;
+  overflow: hidden;
+}
+.lattice-panel.accent-threat { border-top-color: var(--threat-glow); }
+#latticeCanvas {
+  width: 100%;
+  height: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  flex-shrink: 0;
+}
+
+/* ── LEFT PANEL PER-STEP HTML VISUALS ── */
+.left-step-panel {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  gap: 24px;
+  animation: fadeIn 0.4s ease;
+}
+.left-step-panel.visible { display: flex; }
+
+/* Step 0: broken classical keys */
+.broken-key-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 340px;
+}
+.broken-key-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.broken-key-icon svg {
+  filter: drop-shadow(0 0 14px rgba(255,85,0,0.55));
+}
+.broken-key-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: var(--threat-glow);
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255,85,0,0.5);
+  line-height: 1.1;
+}
+.broken-key-sub {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  color: rgba(255,85,0,0.5);
+  text-transform: uppercase;
+  text-align: center;
+}
+.broken-key-pills {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.bkp-pill {
+  background: rgba(255,85,0,0.08);
+  border: 1px solid rgba(255,85,0,0.3);
+  border-radius: 3px;
+  padding: 6px 14px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: rgba(255,85,0,0.7);
+}
+@keyframes threat-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255,85,0,0.3); }
+  50%       { box-shadow: 0 0 28px rgba(255,85,0,0.6); }
+}
+.broken-key-icon svg { animation: threat-pulse 2s ease-in-out infinite; }
+
+/* Step 1: qubit visual */
+.qubit-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 340px;
+}
+.qubit-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--quantum);
+  text-align: center;
+  text-shadow: 0 0 16px rgba(0,232,122,0.4);
+}
+.qubit-sub {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(0,232,122,0.5);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Step 3: algorithm badge grid */
+.algo-badge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+.algo-badge-card {
+  background: rgba(0,232,122,0.04);
+  border: 1px solid rgba(0,232,122,0.25);
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,232,122,0.06);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.algo-badge-card:hover {
+  border-color: rgba(0,232,122,0.5);
+  box-shadow: 0 0 18px rgba(0,232,122,0.14);
+}
+.algo-badge-card.amber-card {
+  border-color: rgba(255,136,0,0.25);
+  background: rgba(255,136,0,0.04);
+  box-shadow: 0 0 10px rgba(255,136,0,0.06);
+}
+.algo-badge-card.amber-card:hover {
+  border-color: rgba(255,136,0,0.5);
+  box-shadow: 0 0 18px rgba(255,136,0,0.14);
+}
+.abg-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--quantum);
+  line-height: 1.1;
+}
+.abg-name.amber { color: var(--amber); }
+.abg-type {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.abg-role {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,232,122,0.3);
+  color: rgba(0,232,122,0.7);
+  background: rgba(0,232,122,0.06);
+  text-transform: uppercase;
+}
+.abg-role.amber {
+  border-color: rgba(255,136,0,0.3);
+  color: rgba(255,136,0,0.7);
+  background: rgba(255,136,0,0.06);
+}
+.algo-grid-header {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0,232,122,0.5);
+  text-align: center;
+  text-transform: uppercase;
+}
+.algo-grid-footer {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(0,232,122,0.35);
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Step 4: migration phase timeline */
+.mig-timeline-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 380px;
+}
+.mig-timeline-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 4px;
+  color: var(--quantum);
+  text-align: center;
+}
+.mig-phases {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+}
+.mig-phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.mig-phase-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--quantum);
+  background: rgba(0,232,122,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0,232,122,0.2);
+}
+.mig-phase-num {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--quantum);
+}
+.mig-phase-name {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(0,232,122,0.65);
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.3;
+}
+.mig-chevron {
+  font-size: 18px;
+  color: rgba(0,232,122,0.35);
+  flex-shrink: 0;
+  padding-bottom: 22px; /* align with dot center */
+}
+.mig-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(192,207,224,0.6);
+  text-align: center;
+  line-height: 1.5;
+}
+.mig-urgency {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,136,0,0.65);
+  border: 1px solid rgba(255,136,0,0.2);
+  border-radius: 3px;
+  padding: 5px 14px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── RIGHT: DETAIL PANELS ── */
+.detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px 12px 12px 6px;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.detail-panel::-webkit-scrollbar { width: 4px; }
+.detail-panel::-webkit-scrollbar-track { background: transparent; }
+.detail-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* Detail panel inner wrapper — receives top-border accent */
+.detail-panel-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  border-top: 3px solid var(--quantum);
+  padding: 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  transition: border-top-color 0.4s ease;
+}
+.detail-panel-inner::-webkit-scrollbar { width: 4px; }
+.detail-panel-inner::-webkit-scrollbar-track { background: transparent; }
+.detail-panel-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.detail-panel-inner.accent-threat { border-top-color: var(--threat-glow); }
+.detail-panel-inner.accent-quantum { border-top-color: var(--quantum); }
+
+/* Detail sections — shown/hidden per step */
+.detail-section { display: none; flex-direction: column; gap: 14px; animation: fadeIn 0.4s ease; }
+.detail-section.visible { display: flex; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── SHARED CARD ── */
+.info-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: all 0.4s ease;
+}
+.card-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.card-label.blue  { color: var(--safe-glow); }
+.card-label.red   { color: var(--threat-glow); }
+.card-label.green { color: var(--quantum); }
+.card-label.amber { color: var(--amber); }
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.card-body {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.88);
+}
+.card-body strong { color: var(--text); }
+
+/* ── CRACKED CARD (step 0) ── */
+.cracked-card {
+  border-color: rgba(255,85,0,0.3);
+  background: rgba(15,5,2,0.8);
+  position: relative;
+  overflow: hidden;
+}
+.cracked-card::after {
+  content: '✕ BROKEN';
+  position: absolute;
+  top: 10px; right: 12px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--threat-glow);
+}
+.cracked-card .card-title { color: rgba(255,85,0,0.7); }
+.crack-detail {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+.crack-stat {
+  background: rgba(255,85,0,0.08);
+  border: 1px solid rgba(255,85,0,0.15);
+  border-radius: 3px;
+  padding: 8px 12px;
+  flex: 1;
+  text-align: center;
+}
+.crack-stat-val {
+  font-family: 'Inconsolata', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--threat-glow);
+  display: block;
+}
+.crack-stat-lbl {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ── LEGACY-BROKEN: crack + shudder effect (step 0) ── */
+@keyframes shudder {
+  0%   { transform: translateX(0)    rotate(0deg); }
+  12%  { transform: translateX(-3px) rotate(-0.4deg); }
+  25%  { transform: translateX(4px)  rotate(0.5deg); }
+  37%  { transform: translateX(-4px) rotate(-0.3deg); }
+  50%  { transform: translateX(3px)  rotate(0.4deg); }
+  62%  { transform: translateX(-2px) rotate(-0.2deg); }
+  75%  { transform: translateX(2px)  rotate(0.2deg); }
+  87%  { transform: translateX(-1px) rotate(0deg); }
+  100% { transform: translateX(0)    rotate(0deg); }
+}
+
+.legacy-broken {
+  border-color: rgba(255, 85, 0, 0.55) !important;
+  box-shadow:
+    0 0 14px rgba(255, 85, 0, 0.35),
+    0 0 32px rgba(255, 85, 0, 0.14),
+    inset 0 0 10px rgba(255, 85, 0, 0.07);
+  animation: shudder 0.42s ease-out 1 both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Diagonal crack line rendered via pseudo-element */
+.legacy-broken::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  /* Two-segment jagged diagonal crack */
+  background:
+    linear-gradient(
+      to bottom right,
+      transparent 38%,
+      rgba(255, 85, 0, 0.55) 38%,
+      rgba(255, 85, 0, 0.55) 38.6%,
+      transparent 38.6%
+    ),
+    linear-gradient(
+      160deg,
+      transparent 55%,
+      rgba(255, 85, 0, 0.35) 55%,
+      rgba(255, 85, 0, 0.35) 55.5%,
+      transparent 55.5%
+    );
+  border-radius: inherit;
+}
+
+/* ── ALGORITHM CARDS (step 3) ── */
+.algo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.algo-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.algo-card.revealed { opacity: 1; transform: translateY(0); }
+.algo-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 17px;
+  letter-spacing: 2px;
+  color: var(--quantum);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.algo-type {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.algo-use {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: rgba(220,228,240,0.85);
+  line-height: 1.5;
+}
+.algo-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.algo-badge.lattice { color: var(--quantum); border-color: rgba(0,232,122,0.3); background: rgba(0,232,122,0.06); }
+.algo-badge.hash    { color: var(--amber);   border-color: rgba(255,136,0,0.3);  background: rgba(255,136,0,0.06); }
+
+/* ── COMPARISON TABLE (step 2) ── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.compare-table th {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.compare-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+  font-family: 'Rajdhani', sans-serif;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td:first-child { color: var(--text); font-weight: 600; }
+.tag {
+  display: inline-block;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.tag.broken   { color: var(--threat-glow); border-color: rgba(255,85,0,0.3);   background: rgba(255,85,0,0.08); }
+.tag.safe     { color: var(--quantum);     border-color: rgba(0,232,122,0.3);  background: rgba(0,232,122,0.06); }
+.tag.partial  { color: var(--amber);       border-color: rgba(255,136,0,0.3);  background: rgba(255,136,0,0.06); }
+
+/* ── TIMELINE (step 4) ── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 24px;
+  padding-bottom: 24px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--safe-glow), var(--quantum));
+}
+.tl-item {
+  position: relative;
+  padding: 0 0 18px 16px;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.tl-item.revealed { opacity: 1; transform: translateX(0); }
+.tl-dot {
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+.tl-dot.blue  { border-color: var(--safe-glow);  background: rgba(42,159,214,0.3); }
+.tl-dot.amber { border-color: var(--amber);       background: rgba(255,136,0,0.3); }
+.tl-dot.red   { border-color: var(--threat-glow); background: rgba(255,85,0,0.3); }
+.tl-dot.green { border-color: var(--quantum);     background: rgba(0,232,122,0.3); box-shadow: 0 0 8px var(--quantum); }
+.tl-year {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
+.tl-year.blue  { color: var(--safe-glow); }
+.tl-year.amber { color: var(--amber); }
+.tl-year.red   { color: var(--threat-glow); }
+.tl-year.green { color: var(--quantum); }
+.tl-event {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.tl-note {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(192,207,224,0.65);
+  line-height: 1.4;
+}
+
+/* ── MATH BOX ── */
+.math-box {
+  background: rgba(0,232,122,0.05);
+  border: 1px solid rgba(0,232,122,0.15);
+  border-radius: 4px;
+  padding: 14px 16px;
+  font-family: 'Inconsolata', monospace;
+}
+.math-box .math-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--quantum);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.math-line {
+  font-size: 13px;
+  color: rgba(192,207,224,0.8);
+  line-height: 2;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+.math-line:last-child { border-bottom: none; }
+.math-val { color: var(--quantum); font-weight: 700; }
+.math-val.red { color: var(--threat-glow); }
+
+/* ── CONTROLS ── */
+.controls {
+  height: 56px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  padding: 8px 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+.ctrl-btn:hover:not(:disabled) { border-color: var(--quantum); color: var(--quantum); background: rgba(0,232,122,0.06); }
+.ctrl-btn:disabled { opacity: 0.25; cursor: default; }
+.ctrl-btn.scene-forward { border-color: var(--quantum); color: var(--quantum); }
+.ctrl-btn.scene-forward:hover { background: rgba(0,232,122,0.18); }
+.ctrl-btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.step-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.step-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: var(--quantum); transform: scale(1.4); }
+
+/* ── HOOK BAR ── */
+.hook-bar {
+  position: fixed;
+  bottom: 64px;
+  left: 0; right: 0;
+  margin: 0 24px;
+  background: rgba(0,232,122,0.06);
+  border: 1px solid rgba(0,232,122,0.35);
+  border-top: 5px solid var(--quantum);
+  border-radius: 5px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 10;
+}
+.hook-bar.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.hook-icon { font-size: 20px; flex-shrink: 0; }
+.hook-text {
+  flex: 1;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--quantum);
+}
+.hook-text span { color: rgba(192,207,224,0.7); font-weight: 400; }
+.hook-next {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+/* ── WORKFLOW DIAGRAM (step 3 / sec3) ── S4.2 ──────────────────────── */
+.workflow-container {
+  display: flex;
+  gap: 0;
+  border: 1px solid rgba(0,232,122,0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,232,122,0.02);
+}
+.workflow-lane {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workflow-lane:first-child {
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.workflow-lane-title {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--quantum);
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.workflow-box {
+  border: 1px solid rgba(0,232,122,0.35);
+  border-radius: 4px;
+  padding: 5px 8px;
+  text-align: center;
+  background: rgba(0,232,122,0.05);
+}
+.workflow-box-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--quantum);
+  display: block;
+}
+.workflow-box-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 1px;
+}
+.workflow-box.wf-actor {
+  border-color: rgba(42,159,214,0.45);
+  background: rgba(42,159,214,0.06);
+}
+.workflow-box.wf-actor .workflow-box-label {
+  color: var(--safe-glow);
+}
+.workflow-box.wf-result {
+  border-color: rgba(0,232,122,0.55);
+  background: rgba(0,232,122,0.08);
+  box-shadow: 0 0 6px rgba(0,232,122,0.12);
+}
+.workflow-box.wf-result .workflow-box-label {
+  color: var(--quantum);
+  font-size: 12px;
+}
+.workflow-arrow {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(0,232,122,0.45);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.workflow-step-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.3;
+  padding: 0 4px;
+}
+.workflow-return {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px dashed rgba(0,232,122,0.25);
+  border-radius: 3px;
+  background: rgba(0,232,122,0.03);
+}
+.workflow-return-arrow {
+  font-size: 13px;
+  color: rgba(0,232,122,0.5);
+  flex-shrink: 0;
+}
+.workflow-return-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.3;
+  flex: 1;
+  text-align: center;
+}
+
+/* ── ACCESSIBILITY: focus rings ── */
+:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 04 / 06</div>
+    <h1>THE <span>LATTICE</span> WALL</h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge">
+      <span class="sim-dot"></span>
+      MATHEMATICAL DEFENSE · INTERACTIVE
+    </div>
+  </div>
+</header>
+
+<!-- ── PHASE STEPPER ── -->
+<div class="phase-timeline">
+  <div class="stepper" id="phaseStepper">
+    <div class="step quantum-step active" id="phaseStep0">
+      <div class="step-dot-phase"></div>
+      <div class="step-label-phase">LATTICE</div>
+    </div>
+    <div class="step-line-phase" id="phaseLine0"></div>
+    <div class="step quantum-step" id="phaseStep1">
+      <div class="step-dot-phase"></div>
+      <div class="step-label-phase">VECTORS</div>
+    </div>
+    <div class="step-line-phase" id="phaseLine1"></div>
+    <div class="step quantum-step" id="phaseStep2">
+      <div class="step-dot-phase"></div>
+      <div class="step-label-phase">HARDNESS</div>
+    </div>
+    <div class="step-line-phase" id="phaseLine2"></div>
+    <div class="step threat-step" id="phaseStep3">
+      <div class="step-dot-phase"></div>
+      <div class="step-label-phase">NIST PQC</div>
+    </div>
+    <div class="step-line-phase" id="phaseLine3"></div>
+    <div class="step quantum-step" id="phaseStep4">
+      <div class="step-dot-phase"></div>
+      <div class="step-label-phase">PQC WIN</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NARRATIVE BAR ── -->
+<div class="narrative-bar">
+  <div class="narr-step-label" id="narrStepLabel">STEP 1 / 5</div>
+  <div class="narr-divider"></div>
+  <div class="narr-body">
+    <div class="narr-headline" id="narrHeadline">THE OLD WALLS ARE CRACKING</div>
+    <div class="narr-text" id="narrText">RSA and ECC rely on problems quantum computers solve efficiently. <strong>Every key protecting today's internet can be broken</strong> once a CRQC exists.</div>
+  </div>
+</div>
+
+<!-- ── STAGE ── -->
+<div class="stage">
+
+  <!-- LEFT: LATTICE VISUALIZATION -->
+  <div class="lattice-panel">
+    <svg id="latticeCanvas" viewBox="0 0 500 420" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="ptGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#00e87a" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#00e87a" stop-opacity="0.3"/>
+        </radialGradient>
+        <radialGradient id="ptGradBlue" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#2a9fd6" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#2a9fd6" stop-opacity="0.3"/>
+        </radialGradient>
+        <radialGradient id="ptGradRed" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff5500" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#ff5500" stop-opacity="0.3"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glowStrong">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- BACKGROUND LABEL -->
+      <text id="svgBgLabel" x="250" y="24" text-anchor="middle"
+        font-family="Inconsolata,monospace" font-size="10" fill="rgba(74,90,112,0.7)"
+        letter-spacing="3">LATTICE GEOMETRY — HIGH-DIMENSIONAL SPACE</text>
+
+      <!-- GRID LINES (faint background) -->
+      <g id="gridLines" opacity="0.12">
+        <!-- horizontal -->
+        <line x1="60" y1="60"  x2="440" y2="60"  stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="115" x2="440" y2="115" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="170" x2="440" y2="170" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="225" x2="440" y2="225" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="280" x2="440" y2="280" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="335" x2="440" y2="335" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="60" y1="390" x2="440" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <!-- vertical -->
+        <line x1="60"  y1="60" x2="60"  y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="123" y1="60" x2="123" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="186" y1="60" x2="186" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="249" y1="60" x2="249" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="312" y1="60" x2="312" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="375" y1="60" x2="375" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+        <line x1="440" y1="60" x2="440" y2="390" stroke="#4a5a70" stroke-width="0.5"/>
+      </g>
+
+      <!-- LATTICE CONNECTIONS (neighbor lines) -->
+      <g id="latticeConnections" opacity="0" style="transition: opacity 0.8s;">
+        <!-- generated by JS -->
+      </g>
+
+      <!-- BASIS VECTORS (shown on step 1) -->
+      <g id="basisVectors" opacity="0" style="transition: opacity 0.6s;">
+        <!-- b1: from origin point (249,225) → right+up -->
+        <line x1="249" y1="225" x2="375" y2="170" stroke="var(--safe-glow)" stroke-width="2" stroke-dasharray="none"/>
+        <polygon points="375,170 363,168 365,180" fill="var(--safe-glow)"/>
+        <text x="316" y="188" font-family="Inconsolata,monospace" font-size="11" fill="var(--safe-glow)" letter-spacing="1">b₁</text>
+        <!-- b2: from origin point → up-left -->
+        <line x1="249" y1="225" x2="186" y2="170" stroke="rgba(42,159,214,0.6)" stroke-width="2" stroke-dasharray="4,3"/>
+        <polygon points="186,170 198,172 196,160" fill="rgba(42,159,214,0.6)"/>
+        <text x="200" y="188" font-family="Inconsolata,monospace" font-size="11" fill="rgba(42,159,214,0.6)" letter-spacing="1">b₂</text>
+        <!-- ORIGIN marker -->
+        <circle cx="249" cy="225" r="6" fill="none" stroke="var(--safe-glow)" stroke-width="1.5" opacity="0.7"/>
+        <text x="258" y="244" font-family="Inconsolata,monospace" font-size="10" fill="rgba(42,159,214,0.6)">origin</text>
+      </g>
+
+      <!-- SHORT VECTOR PATH (step 1) -->
+      <g id="shortVector" opacity="0" style="transition: opacity 0.6s;">
+        <line x1="186" y1="170" x2="312" y2="280" stroke="var(--quantum)" stroke-width="2.5"
+              stroke-dasharray="6,3" opacity="0.9"/>
+        <polygon points="312,280 300,272 302,284" fill="var(--quantum)"/>
+        <text x="265" y="240" font-family="Inconsolata,monospace" font-size="11" fill="var(--quantum)"
+              letter-spacing="1">SVP</text>
+        <text x="246" y="254" font-family="Inconsolata,monospace" font-size="9" fill="rgba(0,232,122,0.5)"
+              letter-spacing="0.5">shortest vector</text>
+      </g>
+
+      <!-- LATTICE POINTS -->
+      <g id="latticePoints" opacity="0" style="transition: opacity 0.8s;">
+        <!-- 7×7 grid at 63px spacing from (60,60) -->
+      </g>
+
+      <!-- QUANTUM ATTACK BEAMS (step 2) -->
+      <g id="attackBeams" opacity="0" style="transition: opacity 0.3s;">
+      </g>
+
+      <!-- DEFLECT SPARKS (step 2) -->
+      <g id="deflectSparks" opacity="0">
+      </g>
+
+      <!-- SHIELD RING (step 2) -->
+      <circle id="shieldRing" cx="249" cy="225" r="130" fill="none"
+        stroke="rgba(0,232,122,0)" stroke-width="2"
+        style="transition: stroke 0.5s, r 0.5s;"/>
+
+      <!-- ATTACK LABELS (step 3) -->
+      <g id="attackLabels" opacity="0" style="transition: opacity 0.6s;">
+        <text x="250" y="26" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.65)" letter-spacing="2">QUANTUM ATTACK VECTORS</text>
+        <text x="249" y="84" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(0,232,122,0.6)" letter-spacing="1.5">LATTICE BARRIER</text>
+        <text x="249" y="95" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8" fill="rgba(0,232,122,0.35)" letter-spacing="1">SHORTEST VECTOR PROBLEM</text>
+        <text x="249" y="380" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8" fill="rgba(0,232,122,0.4)" letter-spacing="1.5">NO QUANTUM SPEEDUP — BEAMS DEFLECT</text>
+      </g>
+
+      <!-- CENTER LOCK (step 2+) -->
+      <g id="centerLock" opacity="0" style="transition:opacity 0.5s;">
+        <circle cx="249" cy="225" r="22" fill="rgba(0,20,10,0.9)"
+          stroke="rgba(0,232,122,0.5)" stroke-width="1.5"
+          filter="url(#glow)"/>
+        <text x="249" y="230" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="18"
+          fill="var(--quantum)">⬡</text>
+      </g>
+
+      <!-- RSA VISUALIZATION (step 0 only) -->
+      <g id="rsaViz" opacity="1" style="transition: opacity 0.5s;">
+        <!-- Cracked RSA symbol -->
+        <rect x="140" y="100" width="220" height="80" rx="6"
+          fill="rgba(10,3,2,0.9)" stroke="rgba(255,85,0,0.5)" stroke-width="1.5"/>
+        <!-- Crack lines -->
+        <line x1="200" y1="100" x2="210" y2="180" stroke="rgba(255,85,0,0.7)" stroke-width="1.5"/>
+        <line x1="260" y1="100" x2="250" y2="180" stroke="rgba(255,85,0,0.5)" stroke-width="1"/>
+        <line x1="320" y1="100" x2="325" y2="180" stroke="rgba(255,85,0,0.4)" stroke-width="0.8"/>
+        <text x="250" y="133" text-anchor="middle"
+          font-family="Bebas Neue,sans-serif" font-size="22" fill="rgba(255,85,0,0.8)"
+          letter-spacing="4">RSA-2048</text>
+        <text x="250" y="157" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="11" fill="rgba(255,85,0,0.5)"
+          letter-spacing="2">FACTORING PROBLEM</text>
+        <text x="250" y="174" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="9" fill="rgba(255,85,0,0.4)"
+          letter-spacing="1">BROKEN BY SHOR'S ALGORITHM</text>
+
+        <!-- ECC box -->
+        <rect x="140" y="210" width="220" height="70" rx="6"
+          fill="rgba(10,3,2,0.9)" stroke="rgba(255,85,0,0.4)" stroke-width="1"/>
+        <line x1="230" y1="210" x2="225" y2="280" stroke="rgba(255,85,0,0.5)" stroke-width="1.2"/>
+        <line x1="290" y1="210" x2="295" y2="280" stroke="rgba(255,85,0,0.4)" stroke-width="0.8"/>
+        <text x="250" y="240" text-anchor="middle"
+          font-family="Bebas Neue,sans-serif" font-size="20" fill="rgba(255,85,0,0.65)"
+          letter-spacing="4">ECC / ECDSA</text>
+        <text x="250" y="258" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="11" fill="rgba(255,85,0,0.45)"
+          letter-spacing="2">DISCRETE LOG PROBLEM</text>
+        <text x="250" y="273" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="9" fill="rgba(255,85,0,0.35)"
+          letter-spacing="1">ALSO BROKEN BY SHOR'S ALGORITHM</text>
+
+        <!-- Quantum bolt symbol -->
+        <text x="250" y="360" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="36" fill="rgba(255,85,0,0.3)">⚡</text>
+        <text x="250" y="395" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="9" fill="rgba(255,85,0,0.4)"
+          letter-spacing="3">QUANTUM ADVANTAGE: EXPONENTIAL</text>
+      </g>
+
+      <!-- DIMENSION HINT (step 1) -->
+      <text id="dimHint" x="250" y="395" text-anchor="middle" opacity="0"
+        font-family="Inconsolata,monospace" font-size="9" fill="rgba(0,232,122,0.5)"
+        letter-spacing="2" style="transition: opacity 0.6s;">
+        VISUALIZED IN 2D — REAL KYBER USES 256+ DIMENSIONS
+      </text>
+
+      <!-- ALGO NAMES OVERLAY (step 3) -->
+      <g id="algoOverlay" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="40" y="50" width="420" height="330" rx="4"
+          fill="rgba(4,14,8,0.85)" stroke="rgba(0,232,122,0.1)"/>
+        <text x="250" y="95" text-anchor="middle"
+          font-family="Bebas Neue,sans-serif" font-size="24" fill="var(--quantum)"
+          letter-spacing="4">NIST PQC STANDARDS</text>
+        <text x="250" y="116" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.5)"
+          letter-spacing="3">FINALIZED AUGUST 2024</text>
+        <!-- Four algorithm names stacked -->
+        <g transform="translate(250, 160)" text-anchor="middle">
+          <text font-family="Bebas Neue,sans-serif" font-size="30" fill="var(--quantum)"
+            letter-spacing="3" id="algoT1" opacity="0">CRYSTALS-KYBER</text>
+        </g>
+        <g transform="translate(250, 210)" text-anchor="middle">
+          <text font-family="Bebas Neue,sans-serif" font-size="30" fill="rgba(0,232,122,0.8)"
+            letter-spacing="3" id="algoT2" opacity="0">CRYSTALS-DILITHIUM</text>
+        </g>
+        <g transform="translate(250, 258)" text-anchor="middle">
+          <text font-family="Bebas Neue,sans-serif" font-size="30" fill="rgba(0,232,122,0.65)"
+            letter-spacing="3" id="algoT3" opacity="0">FALCON</text>
+        </g>
+        <g transform="translate(250, 306)" text-anchor="middle">
+          <text font-family="Bebas Neue,sans-serif" font-size="28" fill="rgba(255,136,0,0.9)"
+            letter-spacing="3" id="algoT4" opacity="0">SPHINCS+</text>
+        </g>
+        <text x="250" y="360" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="9" fill="rgba(0,232,122,0.35)"
+          letter-spacing="2">ML-KEM · ML-DSA · SLH-DSA — ISO NAMES</text>
+      </g>
+
+      <!-- MIGRATION TIMELINE VIZ (step 4) -->
+      <g id="migrationViz" opacity="0" style="transition: opacity 0.5s;">
+        <text x="250" y="65" text-anchor="middle"
+          font-family="Bebas Neue,sans-serif" font-size="18" fill="rgba(192,207,224,0.7)"
+          letter-spacing="3">MIGRATION WINDOW</text>
+
+        <!-- Timeline spine -->
+        <line x1="80" y1="210" x2="420" y2="210" stroke="rgba(74,90,112,0.5)" stroke-width="1.5"/>
+
+        <!-- Year ticks -->
+        <line x1="80"  y1="204" x2="80"  y2="216" stroke="rgba(74,90,112,0.6)" stroke-width="1"/>
+        <line x1="164" y1="204" x2="164" y2="216" stroke="rgba(74,90,112,0.6)" stroke-width="1"/>
+        <line x1="248" y1="204" x2="248" y2="216" stroke="rgba(74,90,112,0.6)" stroke-width="1"/>
+        <line x1="332" y1="204" x2="332" y2="216" stroke="rgba(74,90,112,0.6)" stroke-width="1"/>
+        <line x1="420" y1="204" x2="420" y2="216" stroke="rgba(74,90,112,0.6)" stroke-width="1"/>
+        <text x="80"  y="228" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9" fill="var(--text-dim)">2024</text>
+        <text x="164" y="228" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9" fill="var(--text-dim)">2027</text>
+        <text x="248" y="228" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9" fill="var(--text-dim)">2030</text>
+        <text x="332" y="228" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9" fill="var(--text-dim)">2033</text>
+        <text x="420" y="228" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9" fill="var(--text-dim)">2035</text>
+
+        <!-- NIST Standards marker (2024) -->
+        <circle cx="80" cy="210" r="7" fill="rgba(42,159,214,0.3)"
+          stroke="var(--safe-glow)" stroke-width="1.5"/>
+        <text x="80" y="195" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8.5" fill="var(--safe-glow)" letter-spacing="0.5">NIST</text>
+        <text x="80" y="184" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8.5" fill="var(--safe-glow)" letter-spacing="0.5">STDS</text>
+
+        <!-- Harvest window bar -->
+        <rect x="80" y="240" width="284" height="14" rx="2"
+          fill="rgba(255,85,0,0.15)" stroke="rgba(255,85,0,0.3)" stroke-width="1"/>
+        <text x="222" y="251" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8.5" fill="rgba(255,85,0,0.7)" letter-spacing="1">HARVEST NOW, DECRYPT LATER WINDOW</text>
+
+        <!-- Migration must-complete marker (2030) -->
+        <circle cx="248" cy="210" r="7" fill="rgba(255,136,0,0.3)"
+          stroke="var(--amber)" stroke-width="1.5"/>
+        <line x1="248" y1="160" x2="248" y2="204" stroke="rgba(255,136,0,0.5)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="248" y="155" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8.5" fill="var(--amber)" letter-spacing="0.5">MIGRATE</text>
+        <text x="248" y="144" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="8.5" fill="var(--amber)" letter-spacing="0.5">BY HERE</text>
+
+        <!-- CRQC threat zone (2033+) -->
+        <rect x="332" y="120" width="88" height="82" rx="2"
+          fill="rgba(255,85,0,0.06)" stroke="rgba(255,85,0,0.25)" stroke-width="1" stroke-dasharray="3,2"/>
+        <circle cx="332" cy="210" r="7" fill="rgba(255,85,0,0.3)"
+          stroke="var(--threat-glow)" stroke-width="1.5"/>
+        <text x="376" y="140" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.6)" letter-spacing="1">CRQC</text>
+        <text x="376" y="155" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.6)" letter-spacing="1">THREAT</text>
+        <text x="376" y="170" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.4)" letter-spacing="0.5">WINDOW</text>
+        <text x="376" y="185" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.35)">est. 2033+</text>
+
+        <!-- WHERE WE ARE NOW -->
+        <line x1="110" y1="150" x2="110" y2="204" stroke="rgba(0,232,122,0.85)" stroke-width="2"/>
+        <circle cx="110" cy="210" r="12" fill="none" stroke="var(--quantum)" stroke-width="1" class="now-halo"/>
+        <circle cx="110" cy="210" r="6" fill="rgba(0,232,122,0.35)"
+          stroke="var(--quantum)" stroke-width="2"
+          filter="url(#glowStrong)"/>
+        <text x="110" y="143" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-weight="bold" font-size="9.5" fill="var(--quantum)" letter-spacing="0.5">NOW</text>
+        <text x="110" y="132" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-weight="bold" font-size="9.5" fill="rgba(0,232,122,0.85)">2026</text>
+
+        <text x="250" y="295" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="10"
+          fill="rgba(192,207,224,0.5)" letter-spacing="1">
+          THE WINDOW CLOSES BEFORE MOST ORGANIZATIONS ARE READY
+        </text>
+        <text x="250" y="315" text-anchor="middle"
+          font-family="Inconsolata,monospace" font-size="10"
+          fill="rgba(255,85,0,0.5)" letter-spacing="1">
+          HARVESTED DATA REMAINS AT RISK — RETROACTIVELY
+        </text>
+      </g>
+
+      <!-- PER-STEP ANNOTATION STRIPS ─────────────────────────────── -->
+
+      <!-- STEP 0 (rsa): Shor's speedup summary -->
+      <g id="annot0" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="20" y="387" width="460" height="27" rx="2"
+          fill="rgba(8,2,1,0.96)" stroke="rgba(255,85,0,0.22)" stroke-width="1"/>
+        <text x="250" y="403" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.6)" letter-spacing="1.5">SHOR'S ALGORITHM: 10&#x2076;&#x2070; OPS &#x2192; ~8 HRS &#xB7; EXPONENTIAL TO POLYNOMIAL</text>
+      </g>
+
+      <!-- STEP 1 (lattice): LWE insight -->
+      <g id="annot1" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="20" y="387" width="460" height="27" rx="2"
+          fill="rgba(4,12,7,0.96)" stroke="rgba(0,232,122,0.18)" stroke-width="1"/>
+        <text x="250" y="403" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(0,232,122,0.55)" letter-spacing="1.5">LWE NOISE DESTROYS PERIODICITY &#xB7; QUANTUM GAIN: NONE &#xB7; BEST = 2^O(n) EITHER WAY</text>
+      </g>
+
+      <!-- STEP 2 (attack): Hardness confirmation -->
+      <g id="annot2" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="20" y="387" width="460" height="27" rx="2"
+          fill="rgba(4,12,7,0.96)" stroke="rgba(0,232,122,0.18)" stroke-width="1"/>
+        <text x="250" y="403" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(0,232,122,0.55)" letter-spacing="1.5">HARDNESS BARRIER HOLDS &#xB7; NO EXPLOITABLE PERIODICITY &#xB7; LATTICE &#x2260; PERIODIC FUNCTION</text>
+      </g>
+
+      <!-- STEP 3 (standards): Algorithm family summary -->
+      <g id="annot3" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="42" y="383" width="416" height="28" rx="2"
+          fill="rgba(4,12,7,0.97)" stroke="rgba(0,232,122,0.12)" stroke-width="1"/>
+        <text x="250" y="400" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(0,232,122,0.4)" letter-spacing="1.5">3 LATTICE-BASED (ML-KEM &#xB7; ML-DSA &#xB7; FN-DSA) &#xA0;&#xB7;&#xA0; 1 HASH-BASED (SLH-DSA)</text>
+      </g>
+
+      <!-- STEP 4 (migration): Migration urgency callout -->
+      <g id="annot4" opacity="0" style="transition: opacity 0.5s;">
+        <rect x="60" y="325" width="380" height="62" rx="3"
+          fill="rgba(10,4,2,0.94)" stroke="rgba(255,85,0,0.22)" stroke-width="1"/>
+        <text x="250" y="344" text-anchor="middle" font-family="Bebas Neue,sans-serif"
+          font-size="19" fill="rgba(255,85,0,0.75)" letter-spacing="3">MIGRATE OR REMAIN VULNERABLE</text>
+        <text x="250" y="364" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(255,85,0,0.45)" letter-spacing="1.5">2026 &#x2192; CRQC EST. 2033: ~7 YEARS REMAINING</text>
+        <text x="250" y="380" text-anchor="middle" font-family="Inconsolata,monospace"
+          font-size="9" fill="rgba(192,207,224,0.3)" letter-spacing="1">ENTERPRISE MIGRATIONS TAKE 5-10 YEARS &#x2014; START NOW</text>
+      </g>
+
+    </svg>
+
+    <!-- ── LEFT PANEL: PER-STEP HTML VISUALS ─────────────────────────────── -->
+
+    <!-- STEP 0: Classical keys broken -->
+    <div class="left-step-panel" id="left-step-0">
+      <div class="broken-key-wrap">
+        <div class="broken-key-label">CLASSICAL KEYS<br>BROKEN</div>
+        <div class="broken-key-icon">
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Padlock body -->
+            <rect x="28" y="62" width="84" height="62" rx="8"
+              fill="rgba(15,4,2,0.9)" stroke="rgba(255,85,0,0.7)" stroke-width="2.5"/>
+            <!-- Shackle left leg -->
+            <path d="M46 62 L46 42 Q46 18 70 18 Q94 18 94 42 L94 62"
+              fill="none" stroke="rgba(255,85,0,0.55)" stroke-width="6"
+              stroke-linecap="round"/>
+            <!-- Crack across shackle -->
+            <line x1="58" y1="30" x2="82" y2="50"
+              stroke="rgba(255,85,0,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="82" y1="50" x2="72" y2="62"
+              stroke="rgba(255,85,0,0.7)" stroke-width="2" stroke-linecap="round"/>
+            <!-- Keyhole -->
+            <circle cx="70" cy="86" r="8" fill="rgba(255,85,0,0.2)" stroke="rgba(255,85,0,0.5)" stroke-width="1.5"/>
+            <rect x="67" y="91" width="6" height="16" rx="2" fill="rgba(255,85,0,0.35)"/>
+            <!-- Crack lines on body -->
+            <line x1="40" y1="70" x2="55" y2="115"
+              stroke="rgba(255,85,0,0.45)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="90" y1="68" x2="85" y2="120"
+              stroke="rgba(255,85,0,0.3)" stroke-width="1" stroke-linecap="round"/>
+            <!-- X mark top-right -->
+            <text x="108" y="58" font-family="Inconsolata,monospace" font-size="20"
+              fill="rgba(255,85,0,0.8)" text-anchor="middle">✕</text>
+          </svg>
+        </div>
+        <div class="broken-key-pills">
+          <div class="bkp-pill">RSA-2048</div>
+          <div class="bkp-pill">ECC P-256</div>
+        </div>
+        <div class="broken-key-sub">Shor's algorithm: exponential → polynomial</div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Quantum computer / qubit visual -->
+    <div class="left-step-panel" id="left-step-1">
+      <div class="qubit-wrap">
+        <div class="qubit-label">QUANTUM<br>CIRCUIT</div>
+        <svg width="260" height="200" viewBox="0 0 260 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="qbGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00e87a" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#00e87a" stop-opacity="0.1"/>
+            </radialGradient>
+            <filter id="qbGlow">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Horizontal qubit lines -->
+          <line x1="30" y1="50"  x2="230" y2="50"  stroke="rgba(0,232,122,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="30" y1="100" x2="230" y2="100" stroke="rgba(0,232,122,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="30" y1="150" x2="230" y2="150" stroke="rgba(0,232,122,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+          <!-- Gate boxes on lines -->
+          <!-- Line 1 gates -->
+          <rect x="55"  y="39" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="66"  y="54" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">H</text>
+          <rect x="115" y="39" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="126" y="54" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">X</text>
+          <rect x="175" y="39" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="186" y="54" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">Z</text>
+
+          <!-- Line 2 gates -->
+          <rect x="85"  y="89" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="96"  y="104" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">H</text>
+          <rect x="155" y="89" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="166" y="104" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">Z</text>
+
+          <!-- Line 3 gates -->
+          <rect x="55"  y="139" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="66"  y="154" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">X</text>
+          <rect x="135" y="139" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="146" y="154" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">H</text>
+          <rect x="195" y="139" width="22" height="22" rx="3" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.5)" stroke-width="1.2"/>
+          <text x="206" y="154" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.85)">X</text>
+
+          <!-- CNOT connectors (control dots + target circles) -->
+          <!-- CNOT between line1 and line2 at x=126 -->
+          <circle cx="126" cy="50"  r="4" fill="var(--quantum)" filter="url(#qbGlow)"/>
+          <line x1="126" y1="54" x2="126" y2="89" stroke="rgba(0,232,122,0.4)" stroke-width="1.2"/>
+          <circle cx="126" cy="100" r="8" fill="none" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+          <line x1="118" y1="100" x2="134" y2="100" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+          <line x1="126" y1="92"  x2="126" y2="108" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+
+          <!-- CNOT between line2 and line3 at x=166 -->
+          <circle cx="166" cy="100" r="4" fill="var(--quantum)" filter="url(#qbGlow)"/>
+          <line x1="166" y1="104" x2="166" y2="139" stroke="rgba(0,232,122,0.4)" stroke-width="1.2"/>
+          <circle cx="166" cy="150" r="8" fill="none" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+          <line x1="158" y1="150" x2="174" y2="150" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+          <line x1="166" y1="142" x2="166" y2="158" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+
+          <!-- Qubit input labels -->
+          <text x="22" y="54"  text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.5)">q₀</text>
+          <text x="22" y="104" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.5)">q₁</text>
+          <text x="22" y="154" text-anchor="middle" font-family="Inconsolata,monospace" font-size="10" fill="rgba(0,232,122,0.5)">q₂</text>
+
+          <!-- Measurement symbols at right -->
+          <rect x="222" y="43" width="20" height="14" rx="2" fill="rgba(0,232,122,0.06)" stroke="rgba(0,232,122,0.3)" stroke-width="1"/>
+          <path d="M224 54 Q232 44 240 54" fill="none" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+          <line x1="232" y1="44" x2="232" y2="57" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+          <rect x="222" y="93" width="20" height="14" rx="2" fill="rgba(0,232,122,0.06)" stroke="rgba(0,232,122,0.3)" stroke-width="1"/>
+          <path d="M224 104 Q232 94 240 104" fill="none" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+          <line x1="232" y1="94" x2="232" y2="107" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+          <rect x="222" y="143" width="20" height="14" rx="2" fill="rgba(0,232,122,0.06)" stroke="rgba(0,232,122,0.3)" stroke-width="1"/>
+          <path d="M224 154 Q232 144 240 154" fill="none" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+          <line x1="232" y1="144" x2="232" y2="157" stroke="rgba(0,232,122,0.5)" stroke-width="1"/>
+
+          <!-- Label below -->
+          <text x="130" y="190" text-anchor="middle" font-family="Inconsolata,monospace" font-size="9"
+            fill="rgba(0,232,122,0.35)" letter-spacing="2">SHOR'S ALGORITHM CIRCUIT</text>
+        </svg>
+        <div class="qubit-sub">3-qubit superposition · entangled states · no classical equivalent</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Lattice SVG (existing — shown via JS, HTML panel hidden) -->
+    <!-- (no left-step-2 div — the SVG is used directly) -->
+
+    <!-- STEP 3: NIST algorithm badge grid -->
+    <div class="left-step-panel" id="left-step-3">
+      <div class="algo-grid-header">NIST PQC FINALIZED STANDARDS — AUG 2024</div>
+      <div class="algo-badge-grid">
+        <div class="algo-badge-card" id="abg0">
+          <div class="abg-name">CRYSTALS-<br>KYBER</div>
+          <div class="abg-type">Lattice-Based</div>
+          <div class="abg-role">KEY ENCAPSULATION</div>
+        </div>
+        <div class="algo-badge-card" id="abg1">
+          <div class="abg-name">CRYSTALS-<br>DILITHIUM</div>
+          <div class="abg-type">Lattice-Based</div>
+          <div class="abg-role">DIGITAL SIGNATURES</div>
+        </div>
+        <div class="algo-badge-card" id="abg2">
+          <div class="abg-name">FALCON</div>
+          <div class="abg-type">Lattice-Based</div>
+          <div class="abg-role">SIGNATURES</div>
+        </div>
+        <div class="algo-badge-card amber-card" id="abg3">
+          <div class="abg-name amber">SPHINCS+</div>
+          <div class="abg-type">Hash-Based</div>
+          <div class="abg-role amber">SIGNATURES</div>
+        </div>
+      </div>
+      <div class="algo-grid-footer">ML-KEM · ML-DSA · FN-DSA · SLH-DSA — ISO/IEC names</div>
+    </div>
+
+    <!-- STEP 4: Migration phase roadmap -->
+    <div class="left-step-panel" id="left-step-4">
+      <div class="mig-timeline-wrap">
+        <div class="mig-timeline-label">MIGRATION ROADMAP</div>
+        <div class="mig-phases">
+          <div class="mig-phase">
+            <div class="mig-phase-dot"><span class="mig-phase-num">1</span></div>
+            <div class="mig-phase-name">DISCOVER</div>
+          </div>
+          <div class="mig-chevron">›</div>
+          <div class="mig-phase">
+            <div class="mig-phase-dot"><span class="mig-phase-num">2</span></div>
+            <div class="mig-phase-name">ASSESS</div>
+          </div>
+          <div class="mig-chevron">›</div>
+          <div class="mig-phase">
+            <div class="mig-phase-dot"><span class="mig-phase-num">3</span></div>
+            <div class="mig-phase-name">MIGRATE</div>
+          </div>
+          <div class="mig-chevron">›</div>
+          <div class="mig-phase">
+            <div class="mig-phase-dot"><span class="mig-phase-num">4</span></div>
+            <div class="mig-phase-name">VERIFY</div>
+          </div>
+        </div>
+        <div class="mig-sub">Inventory all cryptographic assets → prioritize by risk → swap algorithms → validate compliance</div>
+        <div class="mig-urgency">~7 years to CRQC estimate — start now</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: DETAIL PANELS -->
+  <div class="detail-panel">
+    <div class="detail-panel-inner accent-threat" id="detailPanelInner">
+
+    <!-- STEP 0: The old walls are cracking -->
+    <div class="detail-section visible" id="sec0">
+      <div class="info-card cracked-card">
+        <div class="card-label red">INTEGER FACTORING</div>
+        <div class="card-title">RSA</div>
+        <div class="card-body">
+          Breaking RSA-2048 requires factoring a 617-digit number. Classically: <strong>billions of years</strong>.
+        </div>
+        <div class="crack-detail">
+          <div class="crack-stat">
+            <span class="crack-stat-val">~10<sup>60</sup></span>
+            <span class="crack-stat-lbl">Classical ops</span>
+          </div>
+          <div class="crack-stat">
+            <span class="crack-stat-val">~8 hrs</span>
+            <span class="crack-stat-lbl">CRQC estimate</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-card cracked-card">
+        <div class="card-label red">DISCRETE LOGARITHM</div>
+        <div class="card-title">ECC / ECDSA / ECDH</div>
+        <div class="card-body">
+          Elliptic curve cryptography powers TLS, SSH, and code signing. <strong>Shor's algorithm breaks it with the same efficiency as RSA.</strong>
+        </div>
+        <div class="crack-detail">
+          <div class="crack-stat">
+            <span class="crack-stat-val">P-256</span>
+            <span class="crack-stat-lbl">Most deployed</span>
+          </div>
+          <div class="crack-stat">
+            <span class="crack-stat-val">2,330</span>
+            <span class="crack-stat-lbl">Logical qubits est.</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">THE REQUIREMENT</div>
+        <div class="card-body">
+          Any replacement must be hard for <strong>both classical and quantum computers</strong> — not just one. We need a mathematically different kind of hard problem.
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Lattice geometry -->
+    <div class="detail-section" id="sec1">
+      <div class="math-box">
+        <div class="math-label">The Hard Problem: Shortest Vector Problem (SVP)</div>
+        <div class="math-line">
+          <span>Lattice = integer combinations of basis vectors</span>
+        </div>
+        <div class="math-line">
+          <span>SVP: find shortest non-zero vector in lattice</span>
+          <span class="math-val">NP-Hard</span>
+        </div>
+        <div class="math-line">
+          <span>Best classical algorithm (BKZ)</span>
+          <span class="math-val red">2<sup>O(n)</sup></span>
+        </div>
+        <div class="math-line">
+          <span>Best quantum algorithm (QSVP)</span>
+          <span class="math-val red">2<sup>O(n)</sup></span>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label green">KEY INSIGHT</div>
+        <div class="card-body">
+          Shor's algorithm exploits <strong>periodicity</strong> — lattice problems have no such structure to exploit. Quantum computers gain <strong>no significant speedup</strong> over classical attacks on well-chosen lattice parameters.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label blue">LEARNING WITH ERRORS (LWE)</div>
+        <div class="card-body">
+          In practice, PQC uses <strong>LWE</strong>: given a noisy linear system, recover the secret. The noise destroys periodicity. Even with a quantum computer, solving LWE requires exponential time.
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Quantum resistance comparison -->
+    <div class="detail-section" id="sec2">
+      <div class="info-card">
+        <div class="card-label green">QUANTUM RESISTANCE — WHY LATTICES HOLD</div>
+      </div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Algorithm</th>
+            <th>Hard Problem</th>
+            <th>Classical</th>
+            <th>Quantum</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>RSA</td>
+            <td style="color:var(--text-dim);font-size:12px">Integer factoring</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag broken">BROKEN</span></td>
+          </tr>
+          <tr>
+            <td>ECC</td>
+            <td style="color:var(--text-dim);font-size:12px">Discrete log</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag broken">BROKEN</span></td>
+          </tr>
+          <tr>
+            <td>AES-256</td>
+            <td style="color:var(--text-dim);font-size:12px">Brute force</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag partial">WEAKENED ×√</span></td>
+          </tr>
+          <tr>
+            <td>Kyber / LWE</td>
+            <td style="color:var(--text-dim);font-size:12px">Lattice / LWE</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag safe">HOLDS</span></td>
+          </tr>
+          <tr>
+            <td>Dilithium</td>
+            <td style="color:var(--text-dim);font-size:12px">Module-LWE / SIS</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag safe">HOLDS</span></td>
+          </tr>
+          <tr>
+            <td>SPHINCS+</td>
+            <td style="color:var(--text-dim);font-size:12px">Hash functions</td>
+            <td><span class="tag partial">HARD</span></td>
+            <td><span class="tag safe">HOLDS</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info-card">
+        <div class="card-body" style="font-size:12px;">
+          Grover's algorithm gives quantum computers a <strong>square-root speedup</strong> on symmetric/hash problems — solved by doubling key sizes. Lattice problems offer <strong>no exploitable structure</strong> for quantum speedup.
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: NIST Standards -->
+    <div class="detail-section" id="sec3">
+      <div style="width:100%; padding:12px; box-sizing:border-box;">
+        <div style="font-family:'Inconsolata',monospace; font-size:10px; letter-spacing:3px; color:rgba(74,90,112,0.7); text-align:center; margin-bottom:16px; text-transform:uppercase;">
+          How PQC Standards Replace RSA / ECDH
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-family:'Rajdhani',sans-serif; font-size:13px;">
+          <div style="display:flex; align-items:center; gap:10px; padding:8px; border:1px solid rgba(255,85,0,0.3); border-radius:4px;">
+            <span style="color:var(--threat-glow); font-weight:700; min-width:100px; font-family:'Inconsolata',monospace; font-size:11px;">KEY EXCHANGE</span>
+            <span style="color:var(--text-dim);">RSA / ECDH</span>
+            <span style="color:var(--text-dim); margin:0 6px;">→</span>
+            <span style="color:var(--quantum); font-weight:700;">KYBER-768</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px; border:1px solid rgba(255,85,0,0.3); border-radius:4px;">
+            <span style="color:var(--threat-glow); font-weight:700; min-width:100px; font-family:'Inconsolata',monospace; font-size:11px;">SIGNATURE</span>
+            <span style="color:var(--text-dim);">RSA-PSS / ECDSA</span>
+            <span style="color:var(--text-dim); margin:0 6px;">→</span>
+            <span style="color:var(--quantum); font-weight:700;">DILITHIUM-3</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px; border:1px solid rgba(255,85,0,0.3); border-radius:4px;">
+            <span style="color:var(--threat-glow); font-weight:700; min-width:100px; font-family:'Inconsolata',monospace; font-size:11px;">HASH SIG</span>
+            <span style="color:var(--text-dim);">RSA-PSS variant</span>
+            <span style="color:var(--text-dim); margin:0 6px;">→</span>
+            <span style="color:#f5a623; font-weight:700;">SPHINCS+</span>
+          </div>
+        </div>
+        <div style="margin-top:14px; font-family:'Rajdhani',sans-serif; font-size:13px; color:rgba(192,207,224,0.75); text-align:center; line-height:1.5;">
+          All four are <span style="color:var(--quantum);">FIPS-approved</span> as of Aug 2024.<br>
+          Three are lattice-based · One is hash-based.
+        </div>
+        <div style="margin-top:10px; font-family:'Inconsolata',monospace; font-size:11px; color:rgba(255,136,0,0.7); border-left:2px solid rgba(255,136,0,0.3); padding-left:8px; line-height:1.5;">
+          <span style="color:var(--amber); font-weight:700;">SPHINCS+ (amber)</span> — hash-based fallback. Conservative security assumptions with no lattice dependency. Larger signatures and slower than Dilithium-3. Prefer ML-DSA for performance-sensitive deployments.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-body" style="font-size:12px;">
+          All four are <strong>FIPS-approved standards</strong> (Aug 2024). Google, Cloudflare, Apple, and AWS have begun deploying Kyber in production. Most enterprise migrations haven't started.
+        </div>
+      </div>
+
+      <!-- S4.2: KEM vs DSA workflow diagram -->
+      <div class="workflow-container">
+
+        <!-- LEFT LANE: KYBER-768 KEM -->
+        <div class="workflow-lane">
+          <div class="workflow-lane-title">KYBER-768<br>KEY ENCAPSULATION</div>
+
+          <div class="workflow-box wf-actor">
+            <span class="workflow-box-label">CLIENT</span>
+            <span class="workflow-box-sub">generates keypair</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+          <div class="workflow-step-label">sends public key</div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box">
+            <span class="workflow-box-label">ENCAPSULATE</span>
+            <span class="workflow-box-sub">public key &rarr; ciphertext</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+          <div class="workflow-step-label">ciphertext sent to client</div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box">
+            <span class="workflow-box-label">DECAPSULATE</span>
+            <span class="workflow-box-sub">private key &rarr; secret</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-return">
+            <span class="workflow-return-arrow">&#x21C4;</span>
+            <span class="workflow-return-label">shared secret established<br>never transmitted</span>
+          </div>
+
+          <div class="workflow-box wf-result">
+            <span class="workflow-box-label">&#x2713; SESSION KEY</span>
+          </div>
+        </div>
+
+        <!-- RIGHT LANE: DILITHIUM-3 DSA -->
+        <div class="workflow-lane">
+          <div class="workflow-lane-title">DILITHIUM-3<br>DIGITAL SIGNATURES</div>
+
+          <div class="workflow-box wf-actor">
+            <span class="workflow-box-label">SIGNER</span>
+            <span class="workflow-box-sub">holds private key</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+          <div class="workflow-step-label">creates document / message</div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box">
+            <span class="workflow-box-label">SIGN</span>
+            <span class="workflow-box-sub">private key + message</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+          <div class="workflow-step-label">signature + public key sent</div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box wf-actor">
+            <span class="workflow-box-label">VERIFIER</span>
+            <span class="workflow-box-sub">holds public key</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box">
+            <span class="workflow-box-label">VERIFY</span>
+            <span class="workflow-box-sub">public key + signature</span>
+          </div>
+          <div class="workflow-arrow">&#x2193;</div>
+
+          <div class="workflow-box wf-result">
+            <span class="workflow-box-label">&#x2713; VALID</span>
+          </div>
+        </div>
+
+      </div><!-- /workflow-container -->
+    </div>
+
+    <!-- STEP 4: Migration urgency -->
+    <div class="detail-section" id="sec4">
+      <div class="info-card" style="border-color:rgba(255,136,0,0.3);">
+        <div class="card-label amber">THE MIGRATION CLOCK</div>
+      </div>
+      <div class="timeline" id="migTimeline">
+        <div class="tl-item" id="tl0">
+          <div class="tl-dot blue"></div>
+          <div class="tl-year blue">2024</div>
+          <div class="tl-event">NIST PQC Standards Finalized</div>
+          <div class="tl-note">Kyber, Dilithium, FALCON, SPHINCS+ become FIPS 203–206. The math is done. The clock starts now.</div>
+        </div>
+        <div class="tl-item" id="tl1">
+          <div class="tl-dot blue"></div>
+          <div class="tl-year blue">2025–2027</div>
+          <div class="tl-event">Early Adopter Phase</div>
+          <div class="tl-note">Browsers, cloud providers, and hyperscalers deploy hybrid PQC. Most enterprise infrastructure untouched.</div>
+        </div>
+        <div class="tl-item" id="tl2">
+          <div class="tl-dot amber"></div>
+          <div class="tl-year amber">2027–2030</div>
+          <div class="tl-event">Compliance Mandates Arrive</div>
+          <div class="tl-note">CISA, NSA, and NIST mandate PQC for federal systems. Financial and healthcare regulators follow. Migration backlogs build.</div>
+        </div>
+        <div class="tl-item" id="tl3">
+          <div class="tl-dot red"></div>
+          <div class="tl-year red">2030+</div>
+          <div class="tl-event">Legacy Systems Become a Liability</div>
+          <div class="tl-note">Any long-lived data encrypted today with RSA/ECC is now retroactively readable — if it was harvested. Cyber insurers begin excluding quantum risk.</div>
+        </div>
+        <div class="tl-item" id="tl4">
+          <div class="tl-dot red"></div>
+          <div class="tl-year red">est. 2033–2035</div>
+          <div class="tl-event">Cryptographically Relevant Quantum Computer</div>
+          <div class="tl-note">Mainstream intelligence estimates. At this point, unpatched systems are immediately vulnerable. Harvested data — collected years earlier — decrypts.</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /detail-panel-inner -->
+  </div><!-- /detail-panel -->
+</div><!-- /stage -->
+
+<!-- ── CONTROLS ── -->
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" aria-label="Previous step">← PREV</button>
+  <div class="step-dots" id="stepDots" role="presentation"></div>
+  <button class="ctrl-btn" id="btnNext" aria-label="Next step">NEXT →</button>
+</div>
+
+<!-- ── HOOK BAR ── -->
+<div class="hook-bar" id="hookBar">
+  <div class="hook-icon">⬡</div>
+  <div class="hook-text">
+    The math is ready. <span>Post-quantum standards exist, implementations are shipping — but most enterprises haven't started migrating. Every day of delay adds to the harvest window.</span>
+  </div>
+  <div class="hook-next">NEXT: PERFORMANCE →</div>
+</div>
+
+<script>
+
+// ── STEP DATA ──────────────────────────────────────────────────────────
+const STEPS = [
+  {
+    stepLabel: 'STEP 1 / 5',
+    headline: 'THE OLD WALLS ARE CRACKING',
+    text: 'RSA and ECC rely on problems quantum computers solve efficiently. <strong>Every key protecting today\'s internet can be broken</strong> once a CRQC exists.',
+    section: 'sec0',
+    latticeState: 'rsa',
+    hookBar: false,
+  },
+  {
+    stepLabel: 'STEP 2 / 5',
+    headline: 'A NEW GEOMETRY OF HARD',
+    text: 'A lattice is a grid of points in high-dimensional space. Finding the <em>shortest vector</em> requires exponential work — no shortcut exists, quantum or classical.',
+    section: 'sec1',
+    latticeState: 'lattice',
+    hookBar: false,
+  },
+  {
+    stepLabel: 'STEP 3 / 5',
+    headline: 'QUANTUM BOUNCES OFF',
+    text: 'Shor\'s algorithm exploits <em>periodicity</em> — lattice problems have none. <span class="danger">Quantum computers gain no meaningful speedup</span> over classical attacks on lattice problems.',
+    section: 'sec2',
+    latticeState: 'attack',
+    hookBar: false,
+  },
+  {
+    stepLabel: 'STEP 4 / 5',
+    headline: 'NIST HAS CHOSEN',
+    text: 'Four post-quantum standards were finalized in August 2024. <em>Three are lattice-based.</em> They\'re already shipping in browsers, VPNs, and cloud platforms.',
+    section: 'sec3',
+    latticeState: 'standards',
+    hookBar: false,
+  },
+  {
+    stepLabel: 'STEP 5 / 5',
+    headline: 'THE MIGRATION WINDOW IS NOW',
+    text: 'CRQC estimates point to <span class="danger">2033–2035</span>. PQC migrations take 5–10 years for complex infrastructure. <strong>The deadline is closer than it looks.</strong>',
+    section: 'sec4',
+    latticeState: 'migration',
+    hookBar: true,
+  },
+];
+
+let currentStep = 0;
+let attackAnimFrame = null;
+
+// ── LATTICE POINT DATA ─────────────────────────────────────────────────
+const COLS = 7, ROWS = 7;
+const SPACING = 63;
+const ORIGIN_X = 60, ORIGIN_Y = 60;
+const points = [];
+
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    points.push({ x: ORIGIN_X + c * SPACING, y: ORIGIN_Y + r * SPACING });
+  }
+}
+
+// Build lattice point and connection SVG elements
+function buildLattice() {
+  const connG = document.getElementById('latticeConnections');
+  const ptG   = document.getElementById('latticePoints');
+
+  // Connections (horizontal and vertical neighbors)
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const idx = r * COLS + c;
+      // right
+      if (c < COLS - 1) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', points[idx].x);
+        line.setAttribute('y1', points[idx].y);
+        line.setAttribute('x2', points[idx+1].x);
+        line.setAttribute('y2', points[idx+1].y);
+        line.setAttribute('stroke', 'rgba(74,90,112,0.4)');
+        line.setAttribute('stroke-width', '0.8');
+        connG.appendChild(line);
+      }
+      // down
+      if (r < ROWS - 1) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', points[idx].x);
+        line.setAttribute('y1', points[idx].y);
+        line.setAttribute('x2', points[idx+COLS].x);
+        line.setAttribute('y2', points[idx+COLS].y);
+        line.setAttribute('stroke', 'rgba(74,90,112,0.4)');
+        line.setAttribute('stroke-width', '0.8');
+        connG.appendChild(line);
+      }
+    }
+  }
+
+  // Points
+  points.forEach((pt, i) => {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', pt.x);
+    circle.setAttribute('cy', pt.y);
+    circle.setAttribute('r', '3');
+    circle.setAttribute('fill', 'rgba(42,90,112,0.7)');
+    circle.setAttribute('stroke', 'rgba(74,120,160,0.3)');
+    circle.setAttribute('stroke-width', '0.5');
+    circle.id = 'lpt_' + i;
+    ptG.appendChild(circle);
+  });
+}
+
+// ── ATTACK BEAM ANIMATION ─────────────────────────────────────────────
+const BEAM_ORIGINS = [
+  { x:20,  y:20,  tx:180, ty:140 },
+  { x:480, y:30,  tx:320, ty:170 },
+  { x:490, y:200, tx:360, ty:225 },
+  { x:480, y:400, tx:300, ty:300 },
+  { x:20,  y:380, tx:140, ty:280 },
+  { x:10,  y:200, tx:120, ty:225 },
+];
+
+let beamTimers = [];
+
+function fireBeam(beam) {
+  const svg = document.getElementById('latticeCanvas');
+  const attackG = document.getElementById('attackBeams');
+  const sparkG  = document.getElementById('deflectSparks');
+
+  // Attack line
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', beam.x); line.setAttribute('y1', beam.y);
+  line.setAttribute('x2', beam.x); line.setAttribute('y2', beam.y);
+  line.setAttribute('stroke', 'rgba(255,85,0,0.7)');
+  line.setAttribute('stroke-width', '1.5');
+  line.setAttribute('stroke-dasharray', '6,3');
+  attackG.appendChild(line);
+
+  let progress = 0;
+  const dur = 600;
+  const start = performance.now();
+
+  function animLine(now) {
+    progress = Math.min(1, (now - start) / dur);
+    const cx = beam.x + (beam.tx - beam.x) * progress;
+    const cy = beam.y + (beam.ty - beam.y) * progress;
+    line.setAttribute('x2', cx); line.setAttribute('y2', cy);
+
+    if (progress < 1) {
+      requestAnimationFrame(animLine);
+    } else {
+      // Deflect: spark burst
+      addSpark(beam.tx, beam.ty, sparkG);
+      // Bounce line
+      const dx = beam.tx - beam.x, dy = beam.ty - beam.y;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const nx = -dy/len, ny = dx/len; // perpendicular
+      const bx = beam.tx + nx * 60 + (Math.random()-0.5)*40;
+      const by = beam.ty + ny * 60 + (Math.random()-0.5)*40;
+      const bounce = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      bounce.setAttribute('x1', beam.tx); bounce.setAttribute('y1', beam.ty);
+      bounce.setAttribute('x2', beam.tx); bounce.setAttribute('y2', beam.ty);
+      bounce.setAttribute('stroke', 'rgba(255,136,0,0.5)');
+      bounce.setAttribute('stroke-width', '1');
+      bounce.setAttribute('stroke-dasharray', '4,3');
+      attackG.appendChild(bounce);
+      let bp = 0;
+      const bs = performance.now();
+      function animBounce(now2) {
+        bp = Math.min(1, (now2 - bs) / 400);
+        bounce.setAttribute('x2', beam.tx + (bx-beam.tx)*bp);
+        bounce.setAttribute('y2', beam.ty + (by-beam.ty)*bp);
+        if (bp < 1) requestAnimationFrame(animBounce);
+        else {
+          // Fade out after 1s
+          setTimeout(() => {
+            line.style.transition = 'opacity 0.5s';
+            bounce.style.transition = 'opacity 0.5s';
+            line.style.opacity = '0';
+            bounce.style.opacity = '0';
+            setTimeout(() => {
+              if (line.parentNode) line.parentNode.removeChild(line);
+              if (bounce.parentNode) bounce.parentNode.removeChild(bounce);
+            }, 500);
+          }, 800);
+        }
+      }
+      requestAnimationFrame(animBounce);
+    }
+  }
+  requestAnimationFrame(animLine);
+}
+
+function addSpark(x, y, sparkG) {
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const len = 12 + Math.random() * 10;
+    const spark = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    spark.setAttribute('x1', x); spark.setAttribute('y1', y);
+    spark.setAttribute('x2', x + Math.cos(angle)*len);
+    spark.setAttribute('y2', y + Math.sin(angle)*len);
+    spark.setAttribute('stroke', 'rgba(0,232,122,0.9)');
+    spark.setAttribute('stroke-width', '1.5');
+    spark.style.transition = 'opacity 0.4s';
+    sparkG.appendChild(spark);
+    setTimeout(() => {
+      spark.style.opacity = '0';
+      setTimeout(() => { if(spark.parentNode) spark.parentNode.removeChild(spark); }, 400);
+    }, 100);
+  }
+}
+
+function startAttackAnimation() {
+  document.getElementById('attackBeams').setAttribute('opacity', '1');
+  document.getElementById('deflectSparks').setAttribute('opacity', '1');
+  document.getElementById('shieldRing').setAttribute('stroke', 'rgba(0,232,122,0.4)');
+
+  let idx = 0;
+  function scheduleFire() {
+    if (currentStep !== 2) return;
+    fireBeam(BEAM_ORIGINS[idx % BEAM_ORIGINS.length]);
+    idx++;
+    beamTimers.push(setTimeout(scheduleFire, 700 + Math.random() * 600));
+  }
+  beamTimers.push(setTimeout(scheduleFire, 200));
+}
+
+function stopAttackAnimation() {
+  beamTimers.forEach(clearTimeout);
+  beamTimers = [];
+  const attackG = document.getElementById('attackBeams');
+  const sparkG  = document.getElementById('deflectSparks');
+  while (attackG.firstChild) attackG.removeChild(attackG.firstChild);
+  while (sparkG.firstChild)  sparkG.removeChild(sparkG.firstChild);
+  document.getElementById('attackBeams').setAttribute('opacity', '0');
+  document.getElementById('shieldRing').setAttribute('stroke', 'rgba(0,232,122,0)');
+}
+
+// ── ALGO CARDS ANIMATION (step 3) ─────────────────────────────────────
+function revealAlgoCards() {
+  const ids = ['algoT1','algoT2','algoT3','algoT4'];
+  ids.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.transition = 'opacity 0.5s';
+        el.style.opacity = '1';
+      }
+    }, i * 200);
+  });
+
+  const cards = ['ac0','ac1','ac2','ac3'];
+  cards.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('revealed');
+    }, i * 150 + 100);
+  });
+}
+
+function resetAlgoCards() {
+  ['algoT1','algoT2','algoT3','algoT4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.opacity = '0';
+  });
+  ['ac0','ac1','ac2','ac3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('revealed');
+  });
+}
+
+// ── TIMELINE ANIMATION (step 4) ───────────────────────────────────────
+function revealTimeline() {
+  ['tl0','tl1','tl2','tl3','tl4'].forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('revealed');
+    }, i * 180);
+  });
+}
+
+function resetTimeline() {
+  ['tl0','tl1','tl2','tl3','tl4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('revealed');
+  });
+}
+
+// ── LATTICE STATE MACHINE ──────────────────────────────────────────────
+function setLatticeState(state) {
+  const rsaViz      = document.getElementById('rsaViz');
+  const latticeConn = document.getElementById('latticeConnections');
+  const latticePts  = document.getElementById('latticePoints');
+  const basisVecs   = document.getElementById('basisVectors');
+  const shortVec    = document.getElementById('shortVector');
+  const dimHint     = document.getElementById('dimHint');
+  const centerLock  = document.getElementById('centerLock');
+  const algoOverlay  = document.getElementById('algoOverlay');
+  const migViz       = document.getElementById('migrationViz');
+  const attackLabels = document.getElementById('attackLabels');
+  const annotEls = [0,1,2,3,4].map(n => document.getElementById('annot'+n));
+
+  // Reset all
+  rsaViz.setAttribute('opacity', '0');
+  latticeConn.setAttribute('opacity', '0');
+  latticePts.setAttribute('opacity', '0');
+  basisVecs.setAttribute('opacity', '0');
+  shortVec.setAttribute('opacity', '0');
+  dimHint.setAttribute('opacity', '0');
+  centerLock.setAttribute('opacity', '0');
+  algoOverlay.setAttribute('opacity', '0');
+  migViz.setAttribute('opacity', '0');
+  attackLabels.setAttribute('opacity', '0');
+  stopAttackAnimation();
+  annotEls.forEach(el => { if (el) el.setAttribute('opacity', '0'); });
+
+  switch(state) {
+    case 'rsa':
+      rsaViz.setAttribute('opacity', '1');
+      latticePts.setAttribute('opacity', '0.22');
+      latticeConn.setAttribute('opacity', '0.12');
+      if (annotEls[0]) setTimeout(() => annotEls[0].setAttribute('opacity', '1'), 350);
+      break;
+    case 'lattice':
+      latticeConn.setAttribute('opacity', '1');
+      latticePts.setAttribute('opacity', '1');
+      basisVecs.setAttribute('opacity', '1');
+      shortVec.setAttribute('opacity', '1');
+      dimHint.setAttribute('opacity', '1');
+      // Highlight origin point
+      const originPt = document.getElementById('lpt_24'); // row 3 col 3 = idx 24... actually center is 3*7+3=24
+      if (originPt) {
+        originPt.setAttribute('fill', 'var(--safe-glow)');
+        originPt.setAttribute('r', '4');
+        originPt.setAttribute('filter', 'url(#glow)');
+      }
+      if (annotEls[1]) setTimeout(() => annotEls[1].setAttribute('opacity', '1'), 600);
+      break;
+    case 'attack':
+      latticeConn.setAttribute('opacity', '1');
+      latticePts.setAttribute('opacity', '1');
+      centerLock.setAttribute('opacity', '1');
+      attackLabels.setAttribute('opacity', '1');
+      setTimeout(startAttackAnimation, 400);
+      if (annotEls[2]) setTimeout(() => annotEls[2].setAttribute('opacity', '1'), 500);
+      break;
+    case 'standards':
+      latticeConn.setAttribute('opacity', '0.3');
+      latticePts.setAttribute('opacity', '0.3');
+      algoOverlay.setAttribute('opacity', '1');
+      resetAlgoCards();
+      setTimeout(revealAlgoCards, 300);
+      if (annotEls[3]) setTimeout(() => annotEls[3].setAttribute('opacity', '1'), 900);
+      break;
+    case 'migration':
+      migViz.setAttribute('opacity', '1');
+      resetTimeline();
+      setTimeout(revealTimeline, 300);
+      if (annotEls[4]) setTimeout(() => annotEls[4].setAttribute('opacity', '1'), 650);
+      break;
+  }
+}
+
+// Restore point from lattice state
+function resetLatticePoints() {
+  points.forEach((pt, i) => {
+    const el = document.getElementById('lpt_' + i);
+    if (el) {
+      el.setAttribute('fill', 'rgba(42,90,112,0.7)');
+      el.setAttribute('r', '3');
+      el.removeAttribute('filter');
+    }
+  });
+}
+
+// ── PHASE STEPPER UPDATE ───────────────────────────────────────────────
+function updatePhaseStepper(idx) {
+  for (let i = 0; i < 5; i++) {
+    const stepEl = document.getElementById('phaseStep' + i);
+    if (stepEl) stepEl.classList.toggle('active', i === idx);
+  }
+}
+
+// ── SVG BACKGROUND LABEL PER STEP ──────────────────────────────────────
+const SVG_LABELS = [
+  'LEGACY CRYPTOSYSTEMS',
+  'LATTICE GEOMETRY \u2014 HIGH-DIMENSIONAL SPACE',
+  '',
+  'NIST PQC STANDARDS \u2014 2024',
+  'PQC MIGRATION TIMELINE'
+];
+
+// ── STEP NAVIGATION ────────────────────────────────────────────────────
+function applyStep(idx) {
+  const s = STEPS[idx];
+
+  // Narrative
+  document.getElementById('narrStepLabel').textContent = s.stepLabel;
+  document.getElementById('narrHeadline').textContent  = s.headline;
+  document.getElementById('narrText').innerHTML        = s.text;
+
+  // Sections
+  document.querySelectorAll('.detail-section').forEach(el => el.classList.remove('visible'));
+  const sec = document.getElementById(s.section);
+  if (sec) { sec.classList.add('visible'); sec.scrollTop = 0; }
+  document.querySelector('.detail-panel-inner').scrollTop = 0;
+
+  // Right panel accent: steps 0 (RSA break intro) and 2 (attack) use threat, all others quantum
+  const panelInner = document.getElementById('detailPanelInner');
+  if (idx === 0 || idx === 2) {
+    panelInner.classList.remove('accent-quantum');
+    panelInner.classList.add('accent-threat');
+  } else {
+    panelInner.classList.remove('accent-threat');
+    panelInner.classList.add('accent-quantum');
+  }
+
+  // Crack/shudder effect on RSA and ECC cards — step 0 only
+  const legacyCards = document.querySelectorAll('#sec0 .cracked-card');
+  legacyCards.forEach((card, i) => {
+    if (idx === 0) {
+      // Remove then re-add the class so the shudder animation replays on each entry
+      card.classList.remove('legacy-broken');
+      void card.offsetWidth; // force reflow to restart animation
+      setTimeout(() => card.classList.add('legacy-broken'), i * 80);
+    } else {
+      card.classList.remove('legacy-broken');
+    }
+  });
+
+  // Left panel: toggle SVG vs per-step HTML panels
+  const latticeCanvas = document.getElementById('latticeCanvas');
+  const leftPanel = document.querySelector('.lattice-panel');
+  // Show SVG only on step 2 (attack/lattice geometry)
+  latticeCanvas.style.display = (idx === 2) ? '' : 'none';
+  // Show/hide HTML step panels
+  [0, 1, 3, 4].forEach(n => {
+    const el = document.getElementById('left-step-' + n);
+    if (el) el.classList.toggle('visible', n === idx);
+  });
+  // Left panel border accent: step 0 → threat, step 1/3/4 → quantum, step 2 → quantum
+  if (idx === 0) {
+    leftPanel.classList.add('accent-threat');
+  } else {
+    leftPanel.classList.remove('accent-threat');
+  }
+
+  // Algo badge cards stagger-in on step 3
+  if (idx === 3) {
+    ['abg0','abg1','abg2','abg3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(12px)';
+        el.style.transition = 'none';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, i * 120 + 80);
+      }
+    });
+  }
+
+  // Lattice
+  resetLatticePoints();
+  setLatticeState(s.latticeState);
+
+  // Hook bar
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+
+  // Dots
+  document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+
+  // Phase stepper
+  updatePhaseStepper(idx);
+
+  // Buttons
+  const isLast = idx === STEPS.length - 1;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('btnNext').textContent = isLast ? '→ SCENE 05' : 'NEXT →';
+  document.getElementById('btnNext').classList.toggle('scene-forward', isLast);
+
+  // SVG background label
+  const lbl = document.getElementById('svgBgLabel');
+  if (lbl) lbl.textContent = SVG_LABELS[idx];
+}
+
+// ── DOTS ──────────────────────────────────────────────────────────────
+function buildDots() {
+  const dotsEl = document.getElementById('stepDots');
+  STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if (currentStep > 0) { currentStep--; applyStep(currentStep); }
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+  else { window.location.href = 'scene5_benchmark_interactive.html'; }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') {
+    if (currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+    else { window.location.href = 'scene5_benchmark_interactive.html'; }
+  }
+  if (e.key === 'ArrowLeft' && currentStep > 0) { currentStep--; applyStep(currentStep); }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────
+buildDots();
+buildLattice();
+applyStep(0);
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consequence Map — PQC Demo Scene 06</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  transition: all 0.4s ease;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--threat-glow);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: #fff;
+}
+header h1 span { color: var(--threat-glow); }
+.sim-badge {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+
+/* ── PHASE STEPPER ── */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.phase-step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.phase-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.phase-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.phase-line {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+.phase-step.active .phase-dot {
+  background: var(--threat-glow);
+  border-color: var(--threat-glow);
+  box-shadow: 0 0 8px var(--threat-glow);
+}
+.phase-step.active .phase-label { color: var(--threat-glow); }
+.phase-line.line-active { background: var(--threat-glow); }
+
+/* ── NARRATIVE BAR ── */
+.narrative-bar {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  padding: 12px 32px;
+  min-height: 95px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.narr-step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--threat-glow);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.narr-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.narr-body { flex: 1; }
+.narr-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.narr-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.92);
+}
+.narr-text strong { color: var(--text); font-weight: 600; }
+.narr-text em     { color: var(--quantum); font-style: normal; font-weight: 600; }
+.narr-text .danger { color: #ff8800; font-weight: 600; }
+
+/* ── STAGE ── */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── LEFT: CONSEQUENCE MAP ── */
+.map-panel {
+  flex: 0 0 54%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  margin: 12px 0 12px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-top: 3px solid var(--threat-glow);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+}
+/* ambient background pulse for CRQC atmosphere */
+.map-panel::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,85,0,0.04) 0%, transparent 70%);
+  animation: ambientPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ambientPulse {
+  0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+  50%       { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
+}
+
+#consequenceMap {
+  width: 100%;
+  height: 100%;
+  max-width: 540px;
+  max-height: 100%;
+}
+
+/* Per-step annotation callouts */
+.step-annot { opacity: 0; transition: opacity 0.4s ease; }
+.step-annot.visible { opacity: 1; }
+
+/* SVG branch groups — opacity transitions */
+.branch-group {
+  transition: opacity 0.7s ease;
+  opacity: 0.08;
+}
+.branch-group.ghost  { opacity: 0.16; }
+.branch-group.ghost .branch-node { transform: scale(1); opacity: 1; }
+.branch-group.ghost .branch-line { stroke-dashoffset: 0; }
+.branch-group.dim    { opacity: 0.22; }
+.branch-group.active { opacity: 1; }
+
+/* Center CRQC pulse animation */
+@keyframes crqcPulse {
+  0%, 100% { r: 38; opacity: 0.9; }
+  50%       { r: 44; opacity: 0.6; }
+}
+#crqcPulseRing {
+  animation: crqcPulse 2.2s ease-in-out infinite;
+  transform-origin: 260px 210px;
+}
+@keyframes outerRing {
+  0%   { r: 48; opacity: 0; }
+  30%  { opacity: 0.4; }
+  100% { r: 80; opacity: 0; }
+}
+#crqcOuterRing {
+  animation: outerRing 2.8s ease-out infinite;
+  transform-origin: 260px 210px;
+}
+
+/* Branch line draw-in animation */
+.branch-line {
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  transition: stroke-dashoffset 0.7s ease, opacity 0.7s ease;
+}
+.branch-group.active .branch-line {
+  stroke-dashoffset: 0;
+}
+.branch-group.dim .branch-line {
+  stroke-dashoffset: 0;
+}
+
+/* Branch node scale-in */
+.branch-node {
+  transform-origin: var(--nx) var(--ny);
+  transform: scale(0.3);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.4s, opacity 0.4s ease 0.4s;
+}
+.branch-group.active .branch-node,
+.branch-group.dim    .branch-node {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* ── RIGHT: DETAIL PANEL ── */
+.detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px 16px 20px;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  margin: 12px 12px 12px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-top: 3px solid var(--threat-glow);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  transition: border-top-color 0.4s ease;
+}
+.detail-panel.step-final {
+  border-top-color: var(--quantum);
+}
+.detail-panel::-webkit-scrollbar { width: 4px; }
+.detail-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.detail-section {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeUp 0.38s ease both;
+}
+.detail-section.visible { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Impact header */
+.impact-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid;
+}
+.impact-header.threat {
+  background: rgba(255,85,0,0.07);
+  border-color: rgba(255,85,0,0.22);
+}
+.impact-header.critical {
+  background: rgba(255,136,0,0.06);
+  border-color: rgba(255,136,0,0.2);
+}
+.impact-icon {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.75;
+  line-height: 1;
+}
+.impact-title-group {}
+.impact-category {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+.impact-header.threat .impact-category { color: rgba(255,85,0,0.7); }
+.impact-header.critical .impact-category { color: rgba(255,136,0,0.7); }
+.impact-header.threat .impact-icon { color: var(--threat-glow); }
+.impact-header.critical .impact-icon { color: var(--amber); }
+.impact-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(255,34,25,0.6);
+}
+
+/* Info card */
+.info-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.card-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.card-label.red   { color: var(--threat-glow); }
+.card-label.amber { color: var(--amber); }
+.card-label.blue  { color: var(--safe-glow); }
+.card-label.green { color: var(--quantum); }
+.card-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.88);
+}
+.card-body strong { color: var(--text); }
+.card-body em { color: var(--quantum); font-style: normal; }
+
+/* Affected systems list */
+.systems-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+}
+.system-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+}
+.system-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.system-dot.red   { background: var(--threat-glow); }
+.system-dot.amber { background: var(--amber); }
+
+/* Impact scale badge */
+.scale-badge {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.scale-badge.global {
+  background: rgba(255,85,0,0.1);
+  border: 1px solid rgba(255,85,0,0.2);
+  color: var(--threat-glow);
+}
+.scale-badge.critical {
+  background: rgba(255,136,0,0.08);
+  border: 1px solid rgba(255,136,0,0.18);
+  color: var(--amber);
+}
+.scale-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.scale-badge.global   .scale-dot { background: var(--threat-glow); box-shadow: 0 0 4px var(--threat-glow); }
+.scale-badge.critical .scale-dot { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+
+/* Cascade summary (step 4) */
+.cascade-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.cascade-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-family: 'Inconsolata', monospace;
+}
+.cascade-item.red-item {
+  background: rgba(255,85,0,0.06);
+  border-color: rgba(255,85,0,0.18);
+}
+.cascade-item.amber-item {
+  background: rgba(255,136,0,0.05);
+  border-color: rgba(255,136,0,0.15);
+}
+.cascade-item.cascade-final {
+  grid-column: span 2;
+  border-top: 2px solid rgba(255,136,0,0.35);
+  background: rgba(255,136,0,0.08);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.cascade-final .cascade-name::before {
+  content: '↳ ';
+  color: rgba(255,136,0,0.5);
+}
+.cascade-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+.cascade-item.red-item .cascade-name   { color: var(--threat-glow); }
+.cascade-item.amber-item .cascade-name { color: var(--amber); }
+.cascade-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  line-height: 1.3;
+}
+
+/* ── NODE BURST — Step 5 simultaneous reveal pulse ── */
+@keyframes nodeBurst {
+  0%   { filter: drop-shadow(0 0 0px transparent); }
+  35%  { filter: drop-shadow(0 0 14px #ff5500) drop-shadow(0 0 28px rgba(255,85,0,0.6)); }
+  100% { filter: drop-shadow(0 0 0px transparent); }
+}
+
+/* Applied to branch-group when .burst class is present */
+.branch-group.burst .branch-node circle {
+  animation: nodeBurst 0.5s ease-out 1 forwards;
+}
+
+/* ── HOOK BAR ── */
+.hook-bar {
+  flex-shrink: 0;
+  background: rgba(255,85,0,0.08);
+  border-top: 5px solid var(--threat-glow);
+  padding: 9px 32px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.hook-bar.show { display: flex; }
+.hook-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(255,200,150,0.9);
+  line-height: 1.4;
+}
+.hook-text strong { color: #fff; }
+.hook-text em     { color: var(--quantum); font-style: normal; }
+.hook-cta {
+  font-size: 13px;
+  background: var(--quantum);
+  color: #07080d;
+  padding: 8px 18px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border: none;
+  display: inline-block;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Inconsolata', monospace;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 44px;
+}
+.btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 20px;
+  min-height: 36px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+}
+.btn:hover:not(:disabled) {
+  color: var(--text-bright);
+  border-color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.1);
+}
+.btn:disabled { opacity: 0.25; cursor: default; }
+.btn.menu-return { border-color: var(--safe-glow); color: var(--safe-glow); }
+.btn.menu-return:hover { background: rgba(42,159,214,0.12); }
+.btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.step-dots { display: flex; gap: 8px; align-items: center; }
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: var(--threat-glow); transform: scale(1.5); }
+
+/* ── ACCESSIBILITY: focus rings ── */
+:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 06 / 06 · FINAL</div>
+    <h1>THE <span>CONSEQUENCE</span> MAP</h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge">CRQC IMPACT · GLOBAL</div>
+  </div>
+</header>
+
+<!-- PHASE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper">
+    <div class="phase-step active" id="pstep0">
+      <div class="phase-dot"></div>
+      <div class="phase-label">CRQC</div>
+    </div>
+    <div class="phase-line" id="pline0"></div>
+    <div class="phase-step" id="pstep1">
+      <div class="phase-dot"></div>
+      <div class="phase-label">Q-MITM</div>
+    </div>
+    <div class="phase-line" id="pline1"></div>
+    <div class="phase-step" id="pstep2">
+      <div class="phase-dot"></div>
+      <div class="phase-label">PKI</div>
+    </div>
+    <div class="phase-line" id="pline2"></div>
+    <div class="phase-step" id="pstep3">
+      <div class="phase-dot"></div>
+      <div class="phase-label">ICS</div>
+    </div>
+    <div class="phase-line" id="pline3"></div>
+    <div class="phase-step" id="pstep4">
+      <div class="phase-dot"></div>
+      <div class="phase-label">CASCADE</div>
+    </div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar">
+  <div class="narr-step-label" id="narrStepLabel">STEP 1 / 5</div>
+  <div class="narr-divider"></div>
+  <div class="narr-body">
+    <div class="narr-headline" id="narrHeadline">A CRQC EXISTS. EVERYTHING CHANGES.</div>
+    <div class="narr-text" id="narrText">A Cryptographically Relevant Quantum Computer can break RSA and ECC completely. <strong>Every system that depends on public-key cryptography becomes vulnerable</strong> — simultaneously.</div>
+  </div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+
+  <!-- LEFT: CONSEQUENCE MAP SVG -->
+  <div class="map-panel">
+    <svg id="consequenceMap" viewBox="0 0 520 420" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Consequence map: CRQC at center with five threat branches — Q-MITM, PKI Collapse, ICS/SCADA, Blockchain, and Identity Spoofing">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="glowStrong" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="7" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="glowAmber" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <radialGradient id="crqcFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ff5500" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#ff5500" stop-opacity="0.03"/>
+        </radialGradient>
+        <radialGradient id="qmitmFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ff5500" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#ff5500" stop-opacity="0.05"/>
+        </radialGradient>
+        <radialGradient id="pkiFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ff2200" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#ff2200" stop-opacity="0.05"/>
+        </radialGradient>
+        <radialGradient id="icsFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#FFCC40" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#FFCC40" stop-opacity="0.04"/>
+        </radialGradient>
+        <radialGradient id="chainFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#FAA73F" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#FAA73F" stop-opacity="0.04"/>
+        </radialGradient>
+        <radialGradient id="identFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ff4400" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#ff4400" stop-opacity="0.04"/>
+        </radialGradient>
+      </defs>
+
+      <!-- ── SCADA BACKGROUND SILHOUETTES — visible on Step 4 (ICS/SCADA) only ── -->
+      <!--
+        Two industrial silhouettes placed in the side margins, behind all node groups.
+        Opacity is 0 by default; applyStep() sets it to 0.055 on idx===3.
+        Color: near-white rgba(255,255,255,0.05) rendered at the group fill level,
+        with opacity multiplier applied by JS.
+      -->
+      <g id="scada-bg" opacity="0" style="transition: opacity 0.7s ease; pointer-events: none;">
+
+        <!-- ── POWER TRANSMISSION TOWER — left margin, x≈30–115, full height ── -->
+        <!--
+          Geometry: vertical steel lattice tower.
+          Main pole: narrow rectangle up the centre.
+          Cross-arms at three heights (top, mid, lower).
+          Diagonal bracing struts.
+          Catenary wire arcs hanging from top cross-arm to outside.
+          All fill/stroke: near-white at low opacity so the group multiplier controls brightness.
+        -->
+        <g id="tower-left" fill="rgba(255,255,255,0.72)" stroke="rgba(255,255,255,0.72)" stroke-width="0.6">
+          <!-- Main vertical shaft (two side legs) -->
+          <line x1="62" y1="410" x2="72" y2="40"/>
+          <line x1="88" y1="410" x2="78" y2="40"/>
+
+          <!-- Horizontal cross-braces (lattice) -->
+          <line x1="62.5" y1="380" x2="87.5" y2="380"/>
+          <line x1="63.5" y1="340" x2="86.5" y2="340"/>
+          <line x1="65"   y1="300" x2="85"   y2="300"/>
+          <line x1="66"   y1="260" x2="84"   y2="260"/>
+          <line x1="67"   y1="220" x2="83"   y2="220"/>
+          <line x1="68"   y1="185" x2="82"   y2="185"/>
+          <line x1="69"   y1="155" x2="81"   y2="155"/>
+          <line x1="70"   y1="125" x2="80"   y2="125"/>
+          <line x1="71"   y1="100" x2="79"   y2="100"/>
+          <line x1="72"   y1="75"  x2="78"   y2="75"/>
+          <line x1="72.5" y1="55"  x2="77.5" y2="55"/>
+
+          <!-- Diagonal X-bracing panels (every two bays) -->
+          <line x1="62.5" y1="380" x2="87.5" y2="340"/>
+          <line x1="87.5" y1="380" x2="62.5" y2="340"/>
+          <line x1="65"   y1="300" x2="85"   y2="260"/>
+          <line x1="85"   y1="300" x2="65"   y2="260"/>
+          <line x1="67"   y1="220" x2="83"   y2="185"/>
+          <line x1="83"   y1="220" x2="67"   y2="185"/>
+          <line x1="69"   y1="155" x2="81"   y2="125"/>
+          <line x1="81"   y1="155" x2="69"   y2="125"/>
+
+          <!-- Upper section (narrower) -->
+          <line x1="72"   y1="100" x2="78"   y2="75"/>
+          <line x1="78"   y1="100" x2="72"   y2="75"/>
+
+          <!-- TOP cross-arm (widest — high-voltage) -->
+          <line x1="30"   y1="55"  x2="120"  y2="55"/>
+          <!-- Arm bracing struts -->
+          <line x1="75"   y1="40"  x2="30"   y2="55"/>
+          <line x1="75"   y1="40"  x2="120"  y2="55"/>
+          <!-- Vertical insulator stubs -->
+          <line x1="38"   y1="55"  x2="38"   y2="65"/>
+          <line x1="75"   y1="40"  x2="75"   y2="50"/>
+          <line x1="112"  y1="55"  x2="112"  y2="65"/>
+
+          <!-- MID cross-arm -->
+          <line x1="42"   y1="100" x2="108"  y2="100"/>
+          <line x1="75"   y1="88"  x2="42"   y2="100"/>
+          <line x1="75"   y1="88"  x2="108"  y2="100"/>
+          <line x1="48"   y1="100" x2="48"   y2="108"/>
+          <line x1="102"  y1="100" x2="102"  y2="108"/>
+
+          <!-- LOWER cross-arm -->
+          <line x1="50"   y1="140" x2="100"  y2="140"/>
+          <line x1="75"   y1="130" x2="50"   y2="140"/>
+          <line x1="75"   y1="130" x2="100"  y2="140"/>
+          <line x1="55"   y1="140" x2="55"   y2="148"/>
+          <line x1="95"   y1="140" x2="95"   y2="148"/>
+
+          <!-- Catenary wires hanging from top arm tips to page edges -->
+          <!-- Left wire: from insulator tip (38,65) curves down-left to edge (0,105) -->
+          <path d="M38,65 Q18,90 0,105" fill="none" stroke-width="0.8"/>
+          <!-- Right wire: from (112,65) curves down-right to (150,90) -->
+          <path d="M112,65 Q132,82 150,90" fill="none" stroke-width="0.8"/>
+          <!-- Mid-arm catenaries -->
+          <path d="M48,108 Q28,130 0,148" fill="none" stroke-width="0.7"/>
+          <path d="M102,108 Q122,125 150,132" fill="none" stroke-width="0.7"/>
+
+          <!-- Concrete base footing -->
+          <rect x="56" y="405" width="38" height="8" rx="1"/>
+          <rect x="50" y="408" width="50" height="5" rx="1"/>
+        </g>
+
+        <!-- ── WATER TOWER — right margin, x≈380–490 ── -->
+        <!--
+          Geometry: classic elevated water tank.
+          Six slender supporting legs in a slight V spread.
+          A horizontal ring beam connecting them.
+          A large circular tank on top.
+          A conical roof cap.
+          A vertical access ladder on one leg.
+        -->
+        <g id="tower-water" fill="rgba(255,255,255,0.72)" stroke="rgba(255,255,255,0.72)" stroke-width="0.6">
+          <!-- Support legs (6 legs fanning from ring beam to ground) -->
+          <!-- Leg positions: ring beam at y=235, centre x=435 -->
+          <!-- Legs spread: left-outer, left-mid, left-inner, right-inner, right-mid, right-outer -->
+          <line x1="393" y1="410" x2="413" y2="240"/>
+          <line x1="405" y1="410" x2="420" y2="240"/>
+          <line x1="420" y1="410" x2="427" y2="240"/>
+          <line x1="450" y1="410" x2="443" y2="240"/>
+          <line x1="463" y1="410" x2="450" y2="240"/>
+          <line x1="475" y1="410" x2="457" y2="240"/>
+
+          <!-- Ring beam (horizontal band connecting top of legs) -->
+          <rect x="410" y="236" width="50" height="7" rx="1"/>
+
+          <!-- Cross-bracing between legs (two X panels) -->
+          <line x1="393" y1="410" x2="420" y2="340"/>
+          <line x1="420" y1="410" x2="393" y2="340"/>
+          <line x1="450" y1="410" x2="475" y2="340"/>
+          <line x1="475" y1="410" x2="450" y2="340"/>
+          <!-- Diagonal between left and right clusters -->
+          <line x1="405" y1="370" x2="463" y2="310"/>
+          <line x1="463" y1="370" x2="405" y2="310"/>
+
+          <!-- Horizontal ring at mid-leg height -->
+          <line x1="397" y1="330" x2="473" y2="330"/>
+
+          <!-- Tank body (ellipse for circular tank viewed at slight angle) -->
+          <ellipse cx="435" cy="200" rx="52" ry="48" fill="none" stroke-width="1.2"/>
+          <!-- Tank face detail (vertical seam lines suggesting riveted panels) -->
+          <line x1="415" y1="153" x2="415" y2="247"/>
+          <line x1="435" y1="152" x2="435" y2="248"/>
+          <line x1="455" y1="153" x2="455" y2="247"/>
+
+          <!-- Horizontal bands on tank -->
+          <ellipse cx="435" cy="175" rx="50" ry="8" fill="none" stroke-width="0.7"/>
+          <ellipse cx="435" cy="225" rx="50" ry="8" fill="none" stroke-width="0.7"/>
+
+          <!-- Conical roof cap -->
+          <line x1="383" y1="165" x2="435" y2="130"/>
+          <line x1="487" y1="165" x2="435" y2="130"/>
+          <!-- Roof base ring -->
+          <ellipse cx="435" cy="165" rx="52" ry="10" fill="none" stroke-width="0.7"/>
+
+          <!-- Roof vent / finial -->
+          <line x1="435" y1="130" x2="435" y2="118"/>
+          <line x1="429" y1="118" x2="441" y2="118"/>
+
+          <!-- Access ladder (vertical on left leg) -->
+          <!-- Stiles -->
+          <line x1="401" y1="240" x2="401" y2="410" stroke-width="0.5"/>
+          <line x1="405" y1="240" x2="405" y2="410" stroke-width="0.5"/>
+          <!-- Rungs (every 16px) -->
+          <line x1="401" y1="256" x2="405" y2="256" stroke-width="0.5"/>
+          <line x1="401" y1="272" x2="405" y2="272" stroke-width="0.5"/>
+          <line x1="401" y1="288" x2="405" y2="288" stroke-width="0.5"/>
+          <line x1="401" y1="304" x2="405" y2="304" stroke-width="0.5"/>
+          <line x1="401" y1="320" x2="405" y2="320" stroke-width="0.5"/>
+          <line x1="401" y1="336" x2="405" y2="336" stroke-width="0.5"/>
+          <line x1="401" y1="352" x2="405" y2="352" stroke-width="0.5"/>
+          <line x1="401" y1="368" x2="405" y2="368" stroke-width="0.5"/>
+          <line x1="401" y1="384" x2="405" y2="384" stroke-width="0.5"/>
+          <line x1="401" y1="400" x2="405" y2="400" stroke-width="0.5"/>
+        </g>
+
+      </g><!-- /#scada-bg -->
+
+      <!-- ── STEP 0 BACKGROUND — Abstract circuit board grid ── -->
+      <!--
+        Horizontal and vertical lines forming a grid, with circular junction dots
+        at intersections. Covers the full 520×420 viewBox. Opacity controlled by JS.
+      -->
+      <g id="bg-step0" opacity="0" style="transition: opacity 0.7s ease; pointer-events: none;"
+         fill="rgba(255,255,255,0.7)" stroke="rgba(255,255,255,0.7)" stroke-width="0.6">
+        <!-- Horizontal grid lines -->
+        <line x1="0"   y1="60"  x2="520" y2="60"/>
+        <line x1="0"   y1="120" x2="520" y2="120"/>
+        <line x1="0"   y1="180" x2="520" y2="180"/>
+        <line x1="0"   y1="240" x2="520" y2="240"/>
+        <line x1="0"   y1="300" x2="520" y2="300"/>
+        <line x1="0"   y1="360" x2="520" y2="360"/>
+        <!-- Vertical grid lines -->
+        <line x1="65"  y1="0"   x2="65"  y2="420"/>
+        <line x1="130" y1="0"   x2="130" y2="420"/>
+        <line x1="195" y1="0"   x2="195" y2="420"/>
+        <line x1="260" y1="0"   x2="260" y2="420"/>
+        <line x1="325" y1="0"   x2="325" y2="420"/>
+        <line x1="390" y1="0"   x2="390" y2="420"/>
+        <line x1="455" y1="0"   x2="455" y2="420"/>
+        <!-- Junction dots at intersections (r=3, fill only) -->
+        <circle cx="65"  cy="60"  r="3" stroke="none"/>
+        <circle cx="130" cy="60"  r="3" stroke="none"/>
+        <circle cx="195" cy="60"  r="3" stroke="none"/>
+        <circle cx="260" cy="60"  r="3" stroke="none"/>
+        <circle cx="325" cy="60"  r="3" stroke="none"/>
+        <circle cx="390" cy="60"  r="3" stroke="none"/>
+        <circle cx="455" cy="60"  r="3" stroke="none"/>
+        <circle cx="65"  cy="120" r="3" stroke="none"/>
+        <circle cx="130" cy="120" r="3" stroke="none"/>
+        <circle cx="195" cy="120" r="3" stroke="none"/>
+        <circle cx="260" cy="120" r="3" stroke="none"/>
+        <circle cx="325" cy="120" r="3" stroke="none"/>
+        <circle cx="390" cy="120" r="3" stroke="none"/>
+        <circle cx="455" cy="120" r="3" stroke="none"/>
+        <circle cx="65"  cy="180" r="3" stroke="none"/>
+        <circle cx="130" cy="180" r="3" stroke="none"/>
+        <circle cx="195" cy="180" r="3" stroke="none"/>
+        <circle cx="260" cy="180" r="3" stroke="none"/>
+        <circle cx="325" cy="180" r="3" stroke="none"/>
+        <circle cx="390" cy="180" r="3" stroke="none"/>
+        <circle cx="455" cy="180" r="3" stroke="none"/>
+        <circle cx="65"  cy="240" r="3" stroke="none"/>
+        <circle cx="130" cy="240" r="3" stroke="none"/>
+        <circle cx="195" cy="240" r="3" stroke="none"/>
+        <circle cx="260" cy="240" r="3" stroke="none"/>
+        <circle cx="325" cy="240" r="3" stroke="none"/>
+        <circle cx="390" cy="240" r="3" stroke="none"/>
+        <circle cx="455" cy="240" r="3" stroke="none"/>
+        <circle cx="65"  cy="300" r="3" stroke="none"/>
+        <circle cx="130" cy="300" r="3" stroke="none"/>
+        <circle cx="195" cy="300" r="3" stroke="none"/>
+        <circle cx="260" cy="300" r="3" stroke="none"/>
+        <circle cx="325" cy="300" r="3" stroke="none"/>
+        <circle cx="390" cy="300" r="3" stroke="none"/>
+        <circle cx="455" cy="300" r="3" stroke="none"/>
+        <circle cx="65"  cy="360" r="3" stroke="none"/>
+        <circle cx="130" cy="360" r="3" stroke="none"/>
+        <circle cx="195" cy="360" r="3" stroke="none"/>
+        <circle cx="260" cy="360" r="3" stroke="none"/>
+        <circle cx="325" cy="360" r="3" stroke="none"/>
+        <circle cx="390" cy="360" r="3" stroke="none"/>
+        <circle cx="455" cy="360" r="3" stroke="none"/>
+        <!-- Larger accent junction rings at a few nodes -->
+        <circle cx="65"  cy="60"  r="6" fill="none" stroke-width="0.8"/>
+        <circle cx="390" cy="120" r="6" fill="none" stroke-width="0.8"/>
+        <circle cx="130" cy="300" r="6" fill="none" stroke-width="0.8"/>
+        <circle cx="455" cy="240" r="6" fill="none" stroke-width="0.8"/>
+        <circle cx="195" cy="360" r="6" fill="none" stroke-width="0.8"/>
+        <circle cx="325" cy="60"  r="6" fill="none" stroke-width="0.8"/>
+      </g><!-- /#bg-step0 -->
+
+      <!-- ── STEP 1 BACKGROUND — Network topology (Q-MITM) ── -->
+      <!--
+        Interconnected nodes and directed edges suggesting a network where
+        traffic is being intercepted. A few "hub" nodes with denser connections.
+      -->
+      <g id="bg-step1" opacity="0" style="transition: opacity 0.7s ease; pointer-events: none;"
+         fill="rgba(255,255,255,0.7)" stroke="rgba(255,255,255,0.7)" stroke-width="0.6">
+        <!-- Edges (lines between nodes) -->
+        <line x1="50"  y1="50"  x2="170" y2="110"/>
+        <line x1="50"  y1="50"  x2="80"  y2="200"/>
+        <line x1="170" y1="110" x2="310" y2="80"/>
+        <line x1="170" y1="110" x2="200" y2="240"/>
+        <line x1="310" y1="80"  x2="430" y2="60"/>
+        <line x1="310" y1="80"  x2="380" y2="190"/>
+        <line x1="430" y1="60"  x2="480" y2="160"/>
+        <line x1="80"  y1="200" x2="200" y2="240"/>
+        <line x1="80"  y1="200" x2="60"  y2="330"/>
+        <line x1="200" y1="240" x2="350" y2="270"/>
+        <line x1="200" y1="240" x2="150" y2="360"/>
+        <line x1="380" y1="190" x2="480" y2="160"/>
+        <line x1="380" y1="190" x2="350" y2="270"/>
+        <line x1="480" y1="160" x2="470" y2="310"/>
+        <line x1="350" y1="270" x2="470" y2="310"/>
+        <line x1="350" y1="270" x2="280" y2="370"/>
+        <line x1="60"  y1="330" x2="150" y2="360"/>
+        <line x1="150" y1="360" x2="280" y2="370"/>
+        <line x1="280" y1="370" x2="400" y2="390"/>
+        <line x1="470" y1="310" x2="400" y2="390"/>
+        <!-- Network nodes (small circles) -->
+        <circle cx="50"  cy="50"  r="4" stroke="none"/>
+        <circle cx="170" cy="110" r="5" stroke="none"/>
+        <circle cx="310" cy="80"  r="4" stroke="none"/>
+        <circle cx="430" cy="60"  r="4" stroke="none"/>
+        <circle cx="80"  cy="200" r="4" stroke="none"/>
+        <circle cx="200" cy="240" r="5" stroke="none"/>
+        <circle cx="380" cy="190" r="5" stroke="none"/>
+        <circle cx="480" cy="160" r="4" stroke="none"/>
+        <circle cx="60"  cy="330" r="4" stroke="none"/>
+        <circle cx="350" cy="270" r="5" stroke="none"/>
+        <circle cx="470" cy="310" r="4" stroke="none"/>
+        <circle cx="150" cy="360" r="4" stroke="none"/>
+        <circle cx="280" cy="370" r="4" stroke="none"/>
+        <circle cx="400" cy="390" r="4" stroke="none"/>
+        <!-- Hub node rings (accent outlines for "hub" nodes) -->
+        <circle cx="170" cy="110" r="9"  fill="none" stroke-width="0.8"/>
+        <circle cx="200" cy="240" r="9"  fill="none" stroke-width="0.8"/>
+        <circle cx="380" cy="190" r="9"  fill="none" stroke-width="0.8"/>
+        <circle cx="350" cy="270" r="9"  fill="none" stroke-width="0.8"/>
+      </g><!-- /#bg-step1 -->
+
+      <!-- ── STEP 2 BACKGROUND — Certificate / document (PKI Collapse) ── -->
+      <!--
+        A bordered certificate document with lines representing text,
+        a stamp/seal circle, and a signature underline.
+        Centered in the viewBox (520×420), fills most of the space subtly.
+      -->
+      <g id="bg-step2" opacity="0" style="transition: opacity 0.7s ease; pointer-events: none;"
+         fill="rgba(255,255,255,0.7)" stroke="rgba(255,255,255,0.7)" stroke-width="0.6">
+        <!-- Outer document border -->
+        <rect x="80" y="50" width="360" height="320" rx="4" fill="none" stroke-width="1.0"/>
+        <!-- Inner border (inset 12px) -->
+        <rect x="92" y="62" width="336" height="296" rx="2" fill="none" stroke-width="0.5"/>
+        <!-- Document header bar -->
+        <rect x="80" y="50" width="360" height="32" rx="4" fill="rgba(255,255,255,0.04)" stroke="none"/>
+        <!-- Title line stub in header -->
+        <line x1="140" y1="66" x2="380" y2="66" stroke-width="1.0"/>
+        <!-- Small icon rectangle in header left -->
+        <rect x="96" y="58" width="30" height="16" rx="2" fill="none" stroke-width="0.7"/>
+        <!-- Text lines (body) -->
+        <line x1="108" y1="106" x2="412" y2="106"/>
+        <line x1="108" y1="120" x2="412" y2="120"/>
+        <line x1="108" y1="134" x2="370" y2="134"/>
+        <line x1="108" y1="156" x2="412" y2="156"/>
+        <line x1="108" y1="170" x2="412" y2="170"/>
+        <line x1="108" y1="184" x2="330" y2="184"/>
+        <line x1="108" y1="206" x2="412" y2="206"/>
+        <line x1="108" y1="220" x2="412" y2="220"/>
+        <line x1="108" y1="234" x2="390" y2="234"/>
+        <line x1="108" y1="256" x2="280" y2="256"/>
+        <!-- Signature zone -->
+        <line x1="108" y1="300" x2="240" y2="300" stroke-width="1.2"/>
+        <line x1="108" y1="314" x2="200" y2="314" stroke-width="0.5"/>
+        <!-- Stamp / seal circle — right side of document -->
+        <circle cx="370" cy="300" r="42" fill="none" stroke-width="1.0"/>
+        <circle cx="370" cy="300" r="34" fill="none" stroke-width="0.5"/>
+        <circle cx="370" cy="300" r="5"  stroke="none"/>
+        <!-- Seal radial ticks -->
+        <line x1="370" y1="258" x2="370" y2="266"/>
+        <line x1="370" y1="334" x2="370" y2="342"/>
+        <line x1="328" y1="300" x2="336" y2="300"/>
+        <line x1="404" y1="300" x2="412" y2="300"/>
+        <line x1="340" y1="270" x2="346" y2="276"/>
+        <line x1="394" y1="324" x2="400" y2="330"/>
+        <line x1="340" y1="330" x2="346" y2="324"/>
+        <line x1="394" y1="276" x2="400" y2="270"/>
+      </g><!-- /#bg-step2 -->
+
+      <!-- ── STEP 4 BACKGROUND — World map outline (Final Cascade) ── -->
+      <!--
+        Simplified continent outlines at very low opacity.
+        Positioned to fill the 520×420 viewBox.
+        Uses polyline approximations — not geographically precise,
+        just enough visual suggestion of a world map.
+      -->
+      <g id="bg-step4" opacity="0" style="transition: opacity 0.7s ease; pointer-events: none;"
+         fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.8" stroke-linejoin="round">
+        <!-- North America (approximate outline) -->
+        <polyline points="
+          60,60  80,50  110,48  135,55  155,65  165,80
+          170,100 160,120 150,140 130,155 115,165 105,180
+          95,195  85,210  75,220  65,235  60,250  55,265
+          50,280  55,295  65,305  80,310  95,308  110,300
+          125,290 140,280 150,265 165,255 175,248 185,252
+          195,260 200,275 195,285 185,290 175,295 165,305
+          160,320 165,335 175,345 190,348 205,345 215,338
+          220,325 218,310 210,298 205,285 210,275 220,268
+          235,262 245,258 255,255 260,248
+        " stroke-width="0.9"/>
+        <!-- Greenland blob -->
+        <ellipse cx="165" cy="32" rx="28" ry="18" fill="none" stroke-width="0.7"/>
+        <!-- South America (approximate) -->
+        <polyline points="
+          190,280 205,275 220,268 235,262 245,268 255,278
+          265,295 270,315 272,335 268,360 260,378 248,390
+          235,398 220,402 205,400 192,393 182,380 175,365
+          170,348 168,330 170,310 175,295 183,283 190,280
+        " stroke-width="0.9"/>
+        <!-- Europe (approximate) -->
+        <polyline points="
+          285,55  300,48  318,45  335,50  348,58  358,70
+          365,85  362,100 355,112 340,118 325,115 310,108
+          300,98  292,88  285,78  282,68  285,55
+        " stroke-width="0.9"/>
+        <!-- Scandinavia stub -->
+        <polyline points="310,48 308,38 314,30 322,28 328,35 325,45 318,45"/>
+        <!-- Africa (approximate) -->
+        <polyline points="
+          285,130 298,122 315,118 330,122 342,132 350,148
+          355,165 356,182 353,200 347,218 340,235 335,252
+          332,270 330,288 328,305 328,322 330,338 335,353
+          340,365 345,375 350,382 345,388 335,390 320,388
+          305,383 292,374 282,362 275,348 270,332 268,315
+          268,298 270,280 274,263 278,246 280,228 280,210
+          278,192 275,175 272,158 272,142 276,130 285,130
+        " stroke-width="0.9"/>
+        <!-- Asia (approximate — large) -->
+        <polyline points="
+          358,58  375,50  395,45  418,42  440,40  460,38
+          478,40  492,46  505,56  512,70  515,86  512,102
+          505,116 494,126 480,132 465,134 450,130 438,122
+          428,112 418,105 408,100 396,98  382,100 370,108
+          360,118 355,112 362,100 365,85  358,70  358,58
+        " stroke-width="0.9"/>
+        <!-- Asia continuation southward -->
+        <polyline points="
+          465,134 472,148 475,165 472,182 465,196 455,208
+          445,218 435,225 422,228 410,225 400,218 392,208
+          386,195 382,180 382,165 385,150 390,138 396,128
+          408,122 420,118 435,116 450,118 462,125 465,134
+        " stroke-width="0.8"/>
+        <!-- Australia (approximate) -->
+        <polyline points="
+          390,310 405,302 422,298 440,298 456,302 468,312
+          475,325 474,340 468,354 458,364 444,370 428,372
+          412,370 398,364 388,354 382,340 382,325 390,310
+        " stroke-width="0.9"/>
+        <!-- Japan islands stub -->
+        <ellipse cx="488" cy="118" rx="8" ry="16" fill="none" stroke-width="0.6" transform="rotate(-20,488,118)"/>
+      </g><!-- /#bg-step4 -->
+
+      <!-- Background orbit rings -->
+      <circle cx="260" cy="210" r="68"  fill="none" stroke="rgba(255,85,0,0.07)"  stroke-width="1"/>
+      <circle cx="260" cy="210" r="115" fill="none" stroke="rgba(255,85,0,0.05)"  stroke-width="1" stroke-dasharray="4 6"/>
+      <circle cx="260" cy="210" r="157" fill="none" stroke="rgba(255,85,0,0.04)"  stroke-width="1"/>
+
+      <!-- ── BRANCH: Q-MITM (top, 270°) ── -->
+      <!-- Line: (260,210) → (260,53) -->
+      <g id="bg-qmitm" class="branch-group">
+        <line class="branch-line" x1="260" y1="175" x2="260" y2="88"
+              stroke="#ff5500" stroke-width="1.5" opacity="0.8"/>
+        <!-- Node -->
+        <g class="branch-node" style="--nx:260px; --ny:53px;">
+          <circle cx="260" cy="53" r="26" fill="url(#qmitmFill)"
+                  stroke="#ff5500" stroke-width="1.2" filter="url(#glow)"/>
+          <text x="260" y="49" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                font-weight="700" fill="#ff5500" letter-spacing="1.5">Q-MITM</text>
+          <text x="260" y="62" text-anchor="middle"
+                font-family="Rajdhani,sans-serif" font-size="11"
+                fill="rgba(255,85,0,0.6)">COMMS</text>
+        </g>
+      </g>
+
+      <!-- ── BRANCH: PKI COLLAPSE (top-right, 342°) ── -->
+      <!-- Line: (260,210) → (407,157) approx (260+147,210-48) -->
+      <g id="bg-pki" class="branch-group">
+        <line class="branch-line" x1="283" y1="176" x2="386" y2="163"
+              stroke="#ff2200" stroke-width="1.5" opacity="0.8"/>
+        <g class="branch-node" style="--nx:407px; --ny:155px;">
+          <circle cx="407" cy="155" r="26" fill="url(#pkiFill)"
+                  stroke="#ff2200" stroke-width="1.2" filter="url(#glow)"/>
+          <text x="407" y="151" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                font-weight="700" fill="#ff2200" letter-spacing="1">PKI</text>
+          <text x="407" y="163" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                fill="rgba(255,34,0,0.6)" letter-spacing="0">COLLAPSE</text>
+        </g>
+      </g>
+
+      <!-- ── BRANCH: ICS/SCADA (bottom-right, 54°) ── -->
+      <!-- Line: (260,210) → (351,330) approx (260+91,210+125) -->
+      <g id="bg-ics" class="branch-group">
+        <line class="branch-line" x1="278" y1="241" x2="337" y2="305"
+              stroke="#FFCC40" stroke-width="1.5" opacity="0.8"/>
+        <g class="branch-node" style="--nx:351px; --ny:330px;">
+          <circle cx="351" cy="330" r="26" fill="url(#icsFill)"
+                  stroke="#FFCC40" stroke-width="1.2" filter="url(#glowAmber)"/>
+          <text x="351" y="326" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                font-weight="700" fill="#FFCC40" letter-spacing="1">ICS</text>
+          <text x="351" y="338" text-anchor="middle"
+                font-family="Rajdhani,sans-serif" font-size="11"
+                fill="rgba(255,204,64,0.6)">SCADA</text>
+        </g>
+      </g>
+
+      <!-- ── BRANCH: BLOCKCHAIN (bottom-left, 126°) ── -->
+      <!-- Line: (260,210) → (169,330) approx (260-91,210+125) -->
+      <g id="bg-chain" class="branch-group">
+        <line class="branch-line" x1="242" y1="241" x2="183" y2="305"
+              stroke="#FAA73F" stroke-width="1.5" opacity="0.8"/>
+        <g class="branch-node" style="--nx:169px; --ny:330px;">
+          <circle cx="169" cy="330" r="26" fill="url(#chainFill)"
+                  stroke="#FAA73F" stroke-width="1.2" filter="url(#glowAmber)"/>
+          <text x="169" y="326" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                font-weight="700" fill="#FAA73F" letter-spacing="1">BLOCK</text>
+          <text x="169" y="338" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                fill="rgba(250,167,63,0.6)" letter-spacing="0">CHAIN</text>
+        </g>
+      </g>
+
+      <!-- ── BRANCH: IDENTITY (top-left, 198°) ── -->
+      <!-- Line: (260,210) → (113,157) approx (260-147,210-48) -->
+      <g id="bg-identity" class="branch-group">
+        <line class="branch-line" x1="237" y1="176" x2="134" y2="163"
+              stroke="#ff4400" stroke-width="1.5" opacity="0.8"/>
+        <g class="branch-node" style="--nx:113px; --ny:155px;">
+          <circle cx="113" cy="155" r="26" fill="url(#identFill)"
+                  stroke="#ff4400" stroke-width="1.2" filter="url(#glow)"/>
+          <text x="113" y="151" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                font-weight="700" fill="#ff4400" letter-spacing="1">IDENT</text>
+          <text x="113" y="163" text-anchor="middle"
+                font-family="Inconsolata,monospace" font-size="11"
+                fill="rgba(255,68,0,0.6)" letter-spacing="0">SPOOFING</text>
+        </g>
+      </g>
+
+      <!-- ── CENTER: CRQC NODE ── -->
+      <!-- Outer expanding ring -->
+      <circle id="crqcOuterRing" cx="260" cy="210" r="48"
+              fill="none" stroke="#ff5500" stroke-width="1" opacity="0"/>
+      <!-- Pulsing fill -->
+      <circle id="crqcPulseRing" cx="260" cy="210" r="38"
+              fill="url(#crqcFill)" stroke="rgba(255,85,0,0.35)" stroke-width="1"/>
+      <!-- Core -->
+      <circle cx="260" cy="210" r="28"
+              fill="rgba(255,85,0,0.12)" stroke="#ff5500" stroke-width="1.5"
+              filter="url(#glowStrong)"/>
+      <!-- Label -->
+      <text x="260" y="205" text-anchor="middle"
+            font-family="Bebas Neue,sans-serif" font-size="13"
+            letter-spacing="2" fill="#ff5500">CRQC</text>
+      <text x="260" y="219" text-anchor="middle"
+            font-family="Inconsolata,monospace" font-size="11"
+            letter-spacing="1" fill="rgba(255,85,0,0.6)">ACTIVE</text>
+
+      <!-- ── DATA-FLOW: CRQC → Q-MITM (visible Step 2 only) ── -->
+      <!-- Path def for animateMotion: straight vertical from CRQC center to Q-MITM center -->
+      <defs>
+        <path id="crqcToQmitm" d="M260,210 L260,53"/>
+      </defs>
+      <g id="dataflow-qmitm" style="opacity:0; pointer-events:none; transition:opacity 0.4s ease;">
+        <!-- Packet 1 — leads -->
+        <circle r="3.5" fill="#ff5500" opacity="0.38">
+          <animateMotion dur="3.2s" repeatCount="indefinite" begin="0s">
+            <mpath href="#crqcToQmitm"/>
+          </animateMotion>
+        </circle>
+        <!-- Packet 2 — mid offset -->
+        <circle r="3" fill="#ff5500" opacity="0.30">
+          <animateMotion dur="3.2s" repeatCount="indefinite" begin="-1.07s">
+            <mpath href="#crqcToQmitm"/>
+          </animateMotion>
+        </circle>
+        <!-- Packet 3 — tail offset -->
+        <circle r="2.5" fill="#ff5500" opacity="0.22">
+          <animateMotion dur="3.2s" repeatCount="indefinite" begin="-2.13s">
+            <mpath href="#crqcToQmitm"/>
+          </animateMotion>
+        </circle>
+      </g>
+
+      <!-- ── STEP ANNOTATIONS — per-step callouts near active node ── -->
+      <g id="annot-crqc" class="step-annot">
+        <rect x="65" y="200" width="162" height="19" rx="2"
+              fill="rgba(255,85,0,0.07)" stroke="rgba(255,85,0,0.3)" stroke-width="0.5"/>
+        <text x="146" y="213" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(255,85,0,0.82)">BREAKS RSA · ECC P-256</text>
+      </g>
+      <g id="annot-qmitm" class="step-annot">
+        <rect x="188" y="80" width="144" height="19" rx="2"
+              fill="rgba(255,85,0,0.07)" stroke="rgba(255,85,0,0.3)" stroke-width="0.5"/>
+        <text x="260" y="93" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(255,85,0,0.82)">TLS · VPN · SSH: EXPOSED</text>
+      </g>
+      <g id="annot-pki" class="step-annot">
+        <rect x="347" y="182" width="130" height="19" rx="2"
+              fill="rgba(255,34,0,0.07)" stroke="rgba(255,34,0,0.3)" stroke-width="0.5"/>
+        <text x="412" y="195" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(255,34,0,0.82)">FORGE ANY CERT</text>
+      </g>
+      <g id="annot-ics" class="step-annot">
+        <rect x="280" y="291" width="148" height="19" rx="2"
+              fill="rgba(255,204,64,0.07)" stroke="rgba(255,204,64,0.3)" stroke-width="0.5"/>
+        <text x="354" y="304" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(255,204,64,0.82)">POWER · PIPELINE · WATER</text>
+      </g>
+      <g id="annot-chain" class="step-annot">
+        <rect x="96" y="291" width="142" height="19" rx="2"
+              fill="rgba(250,167,63,0.07)" stroke="rgba(250,167,63,0.3)" stroke-width="0.5"/>
+        <text x="167" y="304" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(250,167,63,0.82)">WALLETS FORGEABLE</text>
+      </g>
+      <g id="annot-identity" class="step-annot">
+        <rect x="148" y="143" width="136" height="19" rx="2"
+              fill="rgba(255,68,0,0.07)" stroke="rgba(255,68,0,0.3)" stroke-width="0.5"/>
+        <text x="216" y="156" text-anchor="middle"
+              font-family="Inconsolata,monospace" font-size="9" letter-spacing="1"
+              fill="rgba(255,68,0,0.82)">PASSPORT · ID SPOOFED</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- RIGHT: DETAIL PANEL -->
+  <div class="detail-panel" id="detailPanel">
+
+    <!-- STEP 0: What is a CRQC -->
+    <div class="detail-section visible" id="sec0">
+      <div class="impact-header threat">
+        <div class="impact-icon">!!</div>
+        <div class="impact-title-group">
+          <div class="impact-category">Cryptographically Relevant Quantum Computer</div>
+          <div class="impact-title">THE CRQC</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">WHAT IT IS</div>
+        <div class="card-body">
+          A CRQC is a quantum computer with enough <strong>stable, error-corrected logical qubits</strong> to run Shor's algorithm at scale — breaking RSA and ECC in hours, not billions of years.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">TIMELINE ESTIMATES</div>
+        <div class="card-body">
+          Most intelligence assessments place a CRQC between <strong>2030 and 2040</strong>. CISA, NSA, and NIST all treat this as a certainty — the debate is only <em>when, not if.</em>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">WHY IT MATTERS NOW</div>
+        <div class="card-body">
+          <strong>Harvest Now, Decrypt Later:</strong> adversaries are already collecting encrypted traffic today to decrypt retroactively once a CRQC exists. The attack starts before the computer does.
+        </div>
+      </div>
+      <div class="scale-badge global">
+        <div class="scale-dot"></div>
+        IMPACT SCALE: GLOBAL CIVILIZATION-LEVEL
+      </div>
+    </div>
+
+    <!-- STEP 1: Q-MITM -->
+    <div class="detail-section" id="sec1">
+      <div class="impact-header threat">
+        <div class="impact-icon">&gt;&lt;</div>
+        <div class="impact-title-group">
+          <div class="impact-category">Consequence #1</div>
+          <div class="impact-title">QUANTUM MAN-IN-THE-MIDDLE</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">HOW IT WORKS</div>
+        <div class="card-body">
+          Every TLS handshake, VPN tunnel, and SSH session uses RSA or ECC for key exchange. A CRQC breaks those key exchanges — making <strong>all encrypted traffic readable</strong>, past and present.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">AFFECTED SYSTEMS</div>
+        <div class="systems-list">
+          <div class="system-row"><div class="system-dot red"></div> HTTPS / TLS 1.3 — all web traffic</div>
+          <div class="system-row"><div class="system-dot red"></div> VPN tunnels — IPSec, WireGuard, OpenVPN</div>
+          <div class="system-row"><div class="system-dot red"></div> SSH sessions — server access, git, CI/CD</div>
+          <div class="system-row"><div class="system-dot red"></div> Signal, WhatsApp, iMessage</div>
+          <div class="system-row"><div class="system-dot red"></div> Corporate email encryption (S/MIME)</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">RETROACTIVE RISK</div>
+        <div class="card-body">
+          Nation-states and sophisticated adversaries are <strong>storing intercepted traffic today</strong>. Medical records, legal communications, state secrets from 2024 become readable in 2034.
+        </div>
+      </div>
+      <div class="scale-badge global">
+        <div class="scale-dot"></div>
+        IMPACT: ALL ENCRYPTED INTERNET TRAFFIC
+      </div>
+    </div>
+
+    <!-- STEP 2: PKI Collapse -->
+    <div class="detail-section" id="sec2">
+      <div class="impact-header threat">
+        <div class="impact-icon">CA</div>
+        <div class="impact-title-group">
+          <div class="impact-category">Consequence #2</div>
+          <div class="impact-title">PKI COLLAPSE</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">THE ROOT OF TRUST BREAKS</div>
+        <div class="card-body">
+          Certificate Authorities sign certificates using RSA or ECDSA. A CRQC can <strong>forge any certificate for any domain</strong> — making the CA-signed trust model that underpins HTTPS completely meaningless.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">AFFECTED SYSTEMS</div>
+        <div class="systems-list">
+          <div class="system-row"><div class="system-dot red"></div> Browser HTTPS padlock — forgeable for any site</div>
+          <div class="system-row"><div class="system-dot red"></div> Code signing — malware becomes indistinguishable</div>
+          <div class="system-row"><div class="system-dot red"></div> Document signing — contracts, PDFs, legal records</div>
+          <div class="system-row"><div class="system-dot red"></div> DNSSEC — DNS trust chain breaks</div>
+          <div class="system-row"><div class="system-dot red"></div> Email authenticity (DKIM signatures)</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">WHY IT'S SYSTEMIC</div>
+        <div class="card-body">
+          PKI is the trust layer everything else sits on. Banking, government portals, software updates — <strong>all depend on certificate integrity.</strong> When PKI fails, nothing can be authenticated.
+        </div>
+      </div>
+      <div class="scale-badge global">
+        <div class="scale-dot"></div>
+        IMPACT: ALL DIGITAL TRUST INFRASTRUCTURE
+      </div>
+    </div>
+
+    <!-- STEP 3: ICS/SCADA -->
+    <div class="detail-section" id="sec3">
+      <div class="impact-header critical">
+        <div class="impact-icon">PWR</div>
+        <div class="impact-title-group">
+          <div class="impact-category">Consequence #3</div>
+          <div class="impact-title">ICS / SCADA EXPOSURE</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">THE PHYSICAL WORLD AT RISK</div>
+        <div class="card-body">
+          Industrial Control Systems managing <strong>power grids, water treatment, oil pipelines, and manufacturing</strong> were built for decades of operation — using crypto that can't be patched quickly.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">AFFECTED INFRASTRUCTURE</div>
+        <div class="systems-list">
+          <div class="system-row"><div class="system-dot amber"></div> Electrical grid control systems (SCADA)</div>
+          <div class="system-row"><div class="system-dot amber"></div> Water treatment and distribution</div>
+          <div class="system-row"><div class="system-dot amber"></div> Oil and gas pipeline monitoring</div>
+          <div class="system-row"><div class="system-dot amber"></div> Nuclear facility control networks</div>
+          <div class="system-row"><div class="system-dot amber"></div> Hospital and medical device networks</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">THE UPGRADE PROBLEM</div>
+        <div class="card-body">
+          ICS devices have 20–30 year lifespans. Cryptographic updates require <strong>physical replacement or extended downtime</strong> — timelines measured in years, not months. Migration must start now.
+        </div>
+      </div>
+      <div class="scale-badge critical">
+        <div class="scale-dot"></div>
+        IMPACT: PHYSICAL INFRASTRUCTURE · HUMAN SAFETY
+      </div>
+    </div>
+
+    <!-- STEP 4: Blockchain + Identity Spoofing + Full cascade -->
+    <div class="detail-section" id="sec4">
+      <div class="impact-header threat">
+        <div class="impact-icon">&#x221E;</div>
+        <div class="impact-title-group">
+          <div class="impact-category">Consequences #4 & #5 — The Full Cascade</div>
+          <div class="impact-title">TOTAL COLLAPSE</div>
+        </div>
+      </div>
+
+      <div class="cascade-grid">
+        <div class="cascade-item red-item">
+          <span class="cascade-name">Q-MITM</span>
+          <div class="cascade-desc">All encrypted transit readable — past and present</div>
+        </div>
+        <div class="cascade-item red-item">
+          <span class="cascade-name">PKI Collapse</span>
+          <div class="cascade-desc">All certificates forgeable — trust chain broken</div>
+        </div>
+        <div class="cascade-item amber-item">
+          <span class="cascade-name">ICS/SCADA</span>
+          <div class="cascade-desc">Physical infrastructure exposed to attack</div>
+        </div>
+        <div class="cascade-item amber-item">
+          <span class="cascade-name">Blockchain</span>
+          <div class="cascade-desc">ECDSA breaks — wallets and contracts forgeable</div>
+        </div>
+        <div class="cascade-item amber-item cascade-final">
+          <span class="cascade-name">Identity Spoofing</span>
+          <div class="cascade-desc">Digital signatures on IDs, passports, licenses become forgeable. Biometric trust systems collapse. Authentication at every level is compromised.</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-label green">THE RESPONSE: PQC MIGRATION</div>
+        <div class="card-body">
+          NIST has published <em>ML-KEM (FIPS 203)</em> and <em>ML-DSA (FIPS 204)</em>. Both are production-ready, deployed by Google, Cloudflare, and Apple. <strong>The tools exist. The window is open.</strong>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.detail-panel -->
+</div><!-- /.stage -->
+
+<!-- HOOK BAR -->
+<div class="hook-bar" id="hookBar">
+  <div class="hook-text">
+    <strong>None of this is theoretical.</strong> Harvest-now attacks are underway. Standards are finalized.
+    <em>The only variable is how prepared your organization is when the CRQC arrives.</em>
+  </div>
+  <div class="hook-cta">START THE MIGRATION</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn" id="btnPrev" disabled aria-label="Previous step">◀ PREV</button>
+  <div class="step-dots" id="stepDots" role="presentation"></div>
+  <button class="btn" id="btnNext" aria-label="Next step">NEXT ▶</button>
+</div>
+
+<script>
+// Branch IDs in reveal order
+const BRANCH_ORDER = ['qmitm', 'pki', 'ics', 'chain', 'identity'];
+
+const STEPS = [
+  {
+    stepLabel: 'STEP 1 / 5',
+    headline:  'A CRQC EXISTS. EVERYTHING CHANGES.',
+    text:      'A Cryptographically Relevant Quantum Computer can break RSA and ECC completely. <strong>Every system that depends on public-key cryptography becomes vulnerable</strong> — simultaneously.',
+    section:   'sec0',
+    revealed:  [],
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 2 / 5',
+    headline:  'BREACH #1: QUANTUM MAN-IN-THE-MIDDLE',
+    text:      'All encrypted traffic in transit becomes readable. <span class="danger">TLS, VPNs, SSH, Signal</span> — everything protected by RSA or ECC key exchange is retroactively decryptable.',
+    section:   'sec1',
+    revealed:  ['qmitm'],
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 3 / 5',
+    headline:  'BREACH #2: PKI COLLAPSE',
+    text:      'Certificate Authorities sign certs with RSA or ECDSA. A CRQC can <span class="danger">forge any certificate for any domain</span> — making the trust model that underpins HTTPS completely meaningless.',
+    section:   'sec2',
+    revealed:  ['qmitm', 'pki'],
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 4 / 5',
+    headline:  'BREACH #3: ICS / SCADA EXPOSURE',
+    text:      'Industrial control systems — power grids, water treatment, pipelines — run on <span class="danger">crypto that can\'t be patched quickly</span>. Physical infrastructure becomes a target. Timelines are measured in years.',
+    section:   'sec3',
+    revealed:  ['qmitm', 'pki', 'ics'],
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 5 / 5',
+    headline:  'BREACHES #4 & #5: THE FULL CASCADE',
+    text:      'Blockchain wallets become forgeable. Digital identities — passports, licenses, credentials — become indistinguishable from forgeries. <strong>The cascade is complete.</strong> <em>The question is preparation, not possibility.</em>',
+    section:   'sec4',
+    revealed:  ['qmitm', 'pki', 'ics', 'chain', 'identity'],
+    hookBar:   true,
+  },
+];
+
+let currentStep = 0;
+
+const ALL_ANNOT_IDS = ['crqc','qmitm','pki','ics','chain','identity'];
+const STEP_ANNOT_MAP = [
+  ['crqc'],                                   // step 0 — CRQC overview
+  ['qmitm'],                                  // step 1 — Q-MITM
+  ['pki'],                                    // step 2 — PKI Collapse
+  ['ics'],                                    // step 3 — ICS/SCADA
+  ['qmitm','pki','ics','chain','identity'],    // step 4 — full cascade
+];
+
+function updateAnnotations(idx) {
+  ALL_ANNOT_IDS.forEach(id => {
+    const el = document.getElementById('annot-' + id);
+    if (el) el.classList.remove('visible');
+  });
+  (STEP_ANNOT_MAP[idx] || []).forEach(id => {
+    const el = document.getElementById('annot-' + id);
+    if (el) el.classList.add('visible');
+  });
+}
+
+function applyBranchStates(revealedArr) {
+  const isFinalStep = (currentStep === STEPS.length - 1);
+  BRANCH_ORDER.forEach(id => {
+    const el = document.getElementById('bg-' + id);
+    if (!el) return;
+    el.classList.remove('active', 'dim', 'ghost');
+    if (revealedArr.includes(id)) {
+      if (isFinalStep) {
+        // All nodes glow fully on final step — full constellation payoff
+        el.classList.add('active');
+      } else {
+        // Most recently revealed = active, rest = dim
+        const lastRevealed = revealedArr[revealedArr.length - 1];
+        el.classList.add(id === lastRevealed ? 'active' : 'dim');
+      }
+    } else {
+      // Unrevealed nodes show as faint ghosts — full web visible from step 1
+      el.classList.add('ghost');
+    }
+  });
+}
+
+function applyStep(idx) {
+  const s = STEPS[idx];
+
+  document.getElementById('narrStepLabel').textContent = s.stepLabel;
+  document.getElementById('narrHeadline').textContent  = s.headline;
+  document.getElementById('narrText').innerHTML        = s.text;
+
+  // Detail sections
+  document.querySelectorAll('.detail-section').forEach(el => el.classList.remove('visible'));
+  const sec = document.getElementById(s.section);
+  if (sec) { sec.classList.add('visible'); sec.scrollTop = 0; }
+  document.querySelector('.detail-panel').scrollTop = 0;
+
+  // SVG branches + annotations
+  applyBranchStates(s.revealed);
+  updateAnnotations(idx);
+
+  // Hook bar
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+
+  // Dots
+  document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+
+  // Buttons
+  const isLast = idx === STEPS.length - 1;
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('btnNext').textContent = isLast ? '← MENU' : 'NEXT ▶';
+  document.getElementById('btnNext').classList.toggle('menu-return', isLast);
+
+  // Phase stepper
+  for (let i = 0; i < STEPS.length; i++) {
+    const pstep = document.getElementById('pstep' + i);
+    if (pstep) pstep.classList.toggle('active', i <= idx);
+    if (i < STEPS.length - 1) {
+      const pline = document.getElementById('pline' + i);
+      if (pline) pline.classList.toggle('line-active', i < idx);
+    }
+  }
+
+  // Detail panel top-border: quantum green on final step
+  const detailPanel = document.getElementById('detailPanel');
+  detailPanel.classList.toggle('step-final', idx === STEPS.length - 1);
+
+  // Data-flow animation: visible on Step 2 only (idx === 1 = "STEP 2 / 5", Q-MITM reveal)
+  const dataflowEl = document.getElementById('dataflow-qmitm');
+  if (dataflowEl) dataflowEl.style.opacity = (idx === 1) ? '1' : '0';
+
+  // Per-step contextual background imagery
+  // Each group is shown only on its matching step at 5% opacity; all others hidden.
+  // scada-bg (step 3) was the original; bg-step0/1/2/4 are newly added.
+  const stepBgMap = {
+    0: 'bg-step0',   // circuit grid — CRQC overview
+    1: 'bg-step1',   // network topology — Q-MITM
+    2: 'bg-step2',   // certificate/document — PKI Collapse
+    3: 'scada-bg',   // industrial silhouettes — ICS/SCADA (pre-existing)
+    4: 'bg-step4',   // world map — Final Cascade
+  };
+  Object.entries(stepBgMap).forEach(([stepIdx, elId]) => {
+    const el = document.getElementById(elId);
+    if (el) el.style.opacity = (idx === Number(stepIdx)) ? '0.05' : '0';
+  });
+
+  // Node burst: on Step 5 (idx === 4) fire a simultaneous 0.5s glow pulse across all 5 nodes
+  // Remove .burst first (forces animation replay if re-navigating to step 5)
+  BRANCH_ORDER.forEach(id => {
+    const el = document.getElementById('bg-' + id);
+    if (el) el.classList.remove('burst');
+  });
+  if (idx === STEPS.length - 1) {
+    // rAF ensures the class removal is committed before re-adding,
+    // guaranteeing the animation restarts cleanly every time step 5 is entered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        BRANCH_ORDER.forEach(id => {
+          const el = document.getElementById('bg-' + id);
+          if (el) el.classList.add('burst');
+        });
+      });
+    });
+  }
+}
+
+function buildDots() {
+  const dotsEl = document.getElementById('stepDots');
+  STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+}
+
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if (currentStep > 0) { currentStep--; applyStep(currentStep); }
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+  else { window.location.href = 'navigation_shell.html'; }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') {
+    if (currentStep < STEPS.length - 1) { currentStep++; applyStep(currentStep); }
+    else { window.location.href = 'navigation_shell.html'; }
+  }
+  if (e.key === 'ArrowLeft' && currentStep > 0) { currentStep--; applyStep(currentStep); }
+});
+
+buildDots();
+applyStep(0);
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

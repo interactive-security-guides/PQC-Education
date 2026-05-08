@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harvest Now, Decrypt Later — PQC Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+  --red:         #ff3322;
+  --era1-color:  var(--safe-glow);
+  --era2-color:  var(--amber);
+  --era3-color:  var(--quantum);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,8,13,0.97);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--threat-glow);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 35px;
+  letter-spacing: 3px;
+  color: #fff;
+}
+header h1 span { color: var(--threat-glow); }
+.sim-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.sim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--safe-glow);
+  flex-shrink: 0;
+  animation: sim-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(42,159,214,0.4); }
+  50%       { opacity: 0.6; box-shadow: 0 0 0 4px rgba(42,159,214,0); }
+}
+
+/* PHASE TIMELINE STEPPER */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.step-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.step-line {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+.step.step-era1.active .step-dot { background: var(--safe-glow); border-color: var(--safe-glow); box-shadow: 0 0 8px var(--safe-glow); }
+.step.step-era1.active .step-label { color: var(--safe-glow); }
+.step.step-era2.active .step-dot { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.step.step-era2.active .step-label { color: var(--amber); }
+.step.step-era3.active .step-dot { background: var(--threat-glow); border-color: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+.step.step-era3.active .step-label { color: var(--threat-glow); }
+.step-line.line-active-era2 { background: var(--amber); }
+.step-line.line-active-era3 { background: var(--threat-glow); }
+
+/* NARRATIVE BAR */
+.narrative-bar {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-bottom: 2px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  position: relative;
+  z-index: 10;
+}
+.narrative-cell {
+  padding: 8px 16px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  transition: background 0.6s ease;
+  height: 130px;
+  overflow: hidden;
+}
+.narrative-cell:last-child { border-right: none; }
+.narrative-cell.active-cell { background: rgba(255,255,255,0.025); }
+.narrative-cell::after {
+  content: '◆';
+  position: absolute;
+  bottom: -10px; left: -5px;
+  font-size: 11px; line-height: 1; z-index: 2;
+}
+#ncell1::after { color: rgba(42,159,214,0.5); }
+#ncell2::after { color: rgba(255,136,0,0.5); }
+#ncell3::after { display: none; }
+.ncell-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ncell-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ncell-label.c1 { color: rgba(42,159,214,0.8); }
+.ncell-label.c1::before { background: var(--safe-glow); box-shadow: 0 0 4px var(--safe-glow); }
+.ncell-label.c2 { color: rgba(255,136,0,0.8); }
+.ncell-label.c2::before { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+.ncell-label.c3 { color: rgba(0,232,122,0.8); }
+.ncell-label.c3::before { background: var(--quantum); box-shadow: 0 0 4px var(--quantum); }
+.ncell-log {
+  display: flex; flex-direction: column; gap: 3px;
+  overflow-y: auto; flex: 1; min-height: 0;
+  scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;
+}
+.ncell-log::-webkit-scrollbar { display: none; }
+.ncell-entry {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.3px; line-height: 1.4; color: var(--text);
+  opacity: 0; transform: translateY(-6px);
+  animation: entry-in 0.5s ease forwards;
+  border-left: 2px solid transparent;
+  padding-left: 7px;
+}
+@keyframes entry-in { to { opacity: 1; transform: translateY(0); } }
+.ncell-entry.stale { color: rgba(180,170,160,0.62); font-weight: 400; }
+.ncell-entry em { font-style: normal; font-weight: 700; }
+.ncell-entry.warn { border-left-color: rgba(255,85,0,0.5); }
+.ncell-entry.warn em { color: var(--threat-glow); }
+.ncell-entry.alert { border-left-color: rgba(255,34,0,0.6); }
+.ncell-entry.alert em { color: var(--red); }
+.ncell-entry.quantum em { color: var(--quantum); }
+.narrative-cell::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: transparent;
+  transition: background 0.5s ease;
+}
+.narrative-cell.c1-active::before { background: var(--safe-glow); box-shadow: 0 0 6px var(--safe-glow); }
+.narrative-cell.c2-active::before { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.narrative-cell.c3-active::before { background: var(--quantum); box-shadow: 0 0 6px var(--quantum); }
+
+/* MAIN STAGE */
+.stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 10px 12px 60px;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ERA PANELS — v2d polish */
+.era {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+.era::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 10;
+  pointer-events: none;
+  border-radius: 14px 14px 0 0;
+}
+#era1::before { background: var(--era1-color); }
+#era2::before { background: var(--era2-color); }
+#era3::before { background: var(--era3-color); }
+#era1.active { border-color: rgba(42,159,214,0.2); box-shadow: 0 4px 32px rgba(42,159,214,0.07), 0 4px 11px rgba(0,0,0,0.4); }
+#era2.active { border-color: rgba(255,136,0,0.2);  box-shadow: 0 4px 32px rgba(255,136,0,0.07),  0 4px 11px rgba(0,0,0,0.4); }
+#era3.active { border-color: rgba(0,232,122,0.2);  box-shadow: 0 4px 32px rgba(0,232,122,0.07),  0 4px 11px rgba(0,0,0,0.4); }
+.era-flash-layer {
+  position: absolute; inset: 0;
+  pointer-events: none; opacity: 0; z-index: 5;
+  border-radius: 14px;
+}
+@keyframes era-flash {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+#era1.phase-flash .era-flash-layer { background: rgba(42,159,214,0.12); animation: era-flash 2s ease-out forwards; }
+#era2.phase-flash .era-flash-layer { background: rgba(255,136,0,0.10);  animation: era-flash 2s ease-out forwards; }
+#era3.phase-flash .era-flash-layer { background: rgba(0,232,122,0.09);  animation: era-flash 2s ease-out forwards; }
+.era-inner {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 18px 16px 14px;
+  width: 100%; flex: 1; min-height: 0; overflow: hidden;
+  position: relative; z-index: 2;
+}
+.era-num-pill {
+  position: absolute;
+  top: 10px; right: 10px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.03);
+  z-index: 6;
+}
+.era-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 15px; letter-spacing: 4px;
+  color: var(--text-dim); margin-bottom: 4px;
+  width: 100%;
+}
+.era-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; letter-spacing: 2px;
+  margin-bottom: 2px; padding-right: 40px; width: 100%;
+}
+.era-subtitle {
+  font-size: 13px; color: var(--text-dim);
+  letter-spacing: 1px; margin-bottom: 16px;
+  font-weight: 300; width: 100%;
+}
+#era1 .era-title { color: var(--safe-glow); }
+#era2 .era-title { color: var(--amber); }
+#era3 .era-title { color: var(--quantum); }
+
+/* NETWORK VIZ */
+.network-viz {
+  width: 100%; flex: 1;
+  position: relative;
+  display: flex; flex-direction: column;
+  gap: 8px; min-height: 0;
+}
+.comm-channel {
+  position: relative; height: 40px;
+  background: rgba(30,111,168,0.07);
+  border: 1px solid rgba(30,111,168,0.18);
+  border-radius: 4px; overflow: hidden;
+  display: flex; align-items: center;
+  padding: 0 10px;
+  transition: background 0.6s ease, border-color 0.6s ease;
+}
+.comm-channel.intercepting {
+  background: rgba(255,85,0,0.05);
+  border-color: rgba(255,85,0,0.2);
+}
+.comm-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; color: var(--safe-glow);
+  letter-spacing: 1px; width: 70px; flex-shrink: 0;
+  transition: color 0.6s ease;
+}
+.comm-channel.intercepting .comm-label { color: var(--threat-glow); }
+.comm-track {
+  flex: 1; height: 2px;
+  background: rgba(42,159,214,0.15);
+  position: relative; overflow: hidden; border-radius: 1px;
+}
+.comm-channel.intercepting .comm-track { background: rgba(255,85,0,0.1); }
+.packet {
+  position: absolute; height: 6px; top: -2px;
+  border-radius: 3px;
+  animation: flow linear infinite;
+}
+.packet.safe {
+  background: linear-gradient(90deg, transparent, var(--safe-glow), transparent);
+  width: 40px; box-shadow: 0 0 8px var(--safe-glow);
+}
+.packet.intercepted {
+  background: linear-gradient(90deg, transparent, var(--threat-glow), transparent);
+  width: 40px; box-shadow: 0 0 8px var(--threat-glow);
+}
+@keyframes flow {
+  0%   { left: -50px; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: calc(100% + 50px); opacity: 0; }
+}
+.intercept-tap {
+  position: absolute; right: 50px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(255,85,0,0.12);
+  border: 2px solid var(--threat-glow);
+  opacity: 0; transition: opacity 0.5s;
+  box-shadow: 0 0 12px var(--threat-glow); z-index: 10;
+}
+.intercepting .intercept-tap { opacity: 1; }
+.intercepting .packet.safe { animation-name: flow-intercepted; }
+@keyframes flow-intercepted {
+  0%   { left: -50px; opacity: 0; }
+  10%  { opacity: 1; }
+  55%  { opacity: 1; }
+  65%  { opacity: 0; left: calc(50% - 20px); }
+  100% { opacity: 0; left: calc(50% - 20px); }
+}
+.proto-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; color: rgba(42,159,214,0.7);
+  letter-spacing: 0.5px; margin-left: 4px;
+  transition: color 0.5s;
+  white-space: nowrap; overflow: visible;
+}
+.proto-tag.intercepted-tag { color: rgba(255,85,0,0.5); }
+.era1-status {
+  margin-top: 10px; padding: 8px 14px;
+  border-radius: 4px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px; letter-spacing: 1px;
+  text-align: center;
+  transition: all 0.8s ease;
+  flex-shrink: 0; font-weight: 600;
+}
+.status-safe {
+  background: rgba(30,111,168,0.15);
+  border: 1px solid rgba(42,159,214,0.3);
+  color: var(--safe-glow);
+}
+.status-warning {
+  background: rgba(196,58,0,0.15);
+  border: 1px solid rgba(255,85,0,0.3);
+  color: var(--threat-glow);
+}
+.threat-ticker {
+  position: absolute; top: 8px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Inconsolata', monospace;
+  font-size: 14px; color: rgba(255,85,0,0.9);
+  letter-spacing: 1px; white-space: nowrap;
+  animation: ticker 0.5s steps(1) infinite;
+  display: none; z-index: 20;
+}
+.threat-ticker.visible { display: block; }
+@keyframes ticker { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ERA 2: DATABASE ARCHIVE */
+.vault-container {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  gap: 10px; width: 100%; overflow: hidden; min-height: 0;
+}
+.data-counter {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; color: var(--amber);
+  letter-spacing: 1px; text-align: center;
+  line-height: 1.8; flex-shrink: 0;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 12px; width: 100%;
+}
+.counter-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; color: var(--threat-glow);
+  display: block; letter-spacing: 2px;
+}
+.db-stack-wrap {
+  position: relative; width: 100%;
+  display: flex; justify-content: center;
+  align-items: flex-end; flex-shrink: 0;
+}
+.particles-container {
+  position: absolute; top: -32px; left: 0; right: 0;
+  height: 32px; overflow: hidden;
+  pointer-events: none; z-index: 5;
+}
+.data-bit {
+  position: absolute;
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; color: var(--safe-glow);
+  opacity: 0; animation: fall 1.2s ease-in forwards;
+}
+@keyframes fall {
+  0%   { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(36px); }
+}
+.archive-log {
+  width: 100%; flex: 2; min-height: 0;
+  background: rgba(5,5,10,0.7);
+  border: 1px solid rgba(255,136,0,0.12);
+  border-radius: 4px; overflow: hidden;
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px; padding: 6px 8px;
+  display: flex; flex-direction: column; gap: 3px; position: relative;
+}
+.archive-log::before {
+  content: 'ARCHIVE WRITE LOG';
+  display: block; color: rgba(255,136,0,0.4);
+  letter-spacing: 2px; font-size: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,136,0,0.1);
+  padding-bottom: 4px; flex-shrink: 0;
+}
+.log-entries {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.log-entry {
+  display: flex; gap: 6px; align-items: baseline;
+  opacity: 0; transform: translateY(-4px);
+  transition: all 0.3s ease;
+  flex-shrink: 0; white-space: nowrap; overflow: hidden;
+}
+.log-entry.visible { opacity: 1; transform: translateY(0); }
+.log-ts    { color: rgba(255,136,0,0.35); font-size: 11px; flex-shrink: 0; }
+.log-type  { font-size: 11px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; width: 52px; }
+.log-type.tls    { color: #2a9fd6; }
+.log-type.vpn    { color: #aa66cc; }
+.log-type.https  { color: #44aa88; }
+.log-type.email  { color: #ddaa44; }
+.log-type.gov    { color: #cc5544; }
+.log-type.health { color: #44aacc; }
+.log-type.fin    { color: #ff8844; }
+.log-detail { color: rgba(180,160,140,0.5); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.archive-classification {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; color: rgba(255,136,0,0.4);
+  text-align: center; line-height: 1.8; letter-spacing: 1px; flex-shrink: 0;
+}
+
+/* ERA 3: CRQC */
+.crqc-container {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; width: 100%; min-height: 0;
+}
+.crqc-core {
+  position: relative;
+  width: 120px; height: 120px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.crqc-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(0,232,122,0.3);
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+.crqc-ring:nth-child(1) { width: 120px; height: 120px; animation-delay: 0s; }
+.crqc-ring:nth-child(2) { width: 88px; height: 88px; animation-delay: 0.4s; border-color: rgba(0,232,122,0.5); }
+.crqc-ring:nth-child(3) { width: 58px; height: 58px; animation-delay: 0.8s; border-color: rgba(0,232,122,0.7); }
+@keyframes pulse-ring {
+  0%,100% { transform: scale(1); opacity: 0.5; }
+  50%      { transform: scale(1.05); opacity: 1; }
+}
+.crqc-center {
+  width: 36px; height: 36px;
+  background: radial-gradient(circle, var(--quantum), rgba(0,200,80,0.3));
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--quantum), 0 0 40px rgba(0,232,122,0.3);
+  animation: core-pulse 2s ease-in-out infinite;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+@keyframes core-pulse {
+  0%,100% { box-shadow: 0 0 20px var(--quantum), 0 0 40px rgba(0,232,122,0.3); }
+  50%      { box-shadow: 0 0 30px var(--quantum), 0 0 60px rgba(0,232,122,0.5); }
+}
+.crqc-status {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  text-align: center; line-height: 2; flex-shrink: 0;
+}
+.crqc-status.offline { color: var(--text-dim); }
+.crqc-status.online  { color: #ff8800; animation: flicker 0.1s 5 linear; }
+@keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.decrypted-items {
+  width: 100%; display: flex; flex-direction: column;
+  gap: 6px; flex-shrink: 0;
+}
+.decrypt-item {
+  padding: 7px 12px; border-radius: 4px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 8px;
+  opacity: 0; transform: translateX(-10px);
+  transition: all 0.4s ease;
+  background: rgba(0,232,122,0.05);
+  border: 1px solid rgba(0,232,122,0.15);
+}
+.decrypt-item.revealed {
+  opacity: 1; transform: translateX(0);
+  border-color: rgba(255,34,0,0.4);
+  background: rgba(255,34,0,0.06);
+}
+.decrypt-item .d-icon  { font-size: 12px; }
+.decrypt-item .d-label { color: var(--text-dim); font-size: 11px; }
+.decrypt-item.revealed .d-label { color: var(--red); }
+.decrypt-item .d-val   { margin-left: auto; color: var(--text-dim); font-size: 11px; }
+.decrypt-item.revealed .d-val   { color: #ff6644; }
+.crqc-info-panel {
+  width: 100%;
+  background: rgba(0,15,8,0.6);
+  border: 1px solid rgba(0,232,122,0.12);
+  border-radius: 4px; padding: 8px 10px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; line-height: 1.9;
+  color: rgba(0,232,122,0.35); letter-spacing: 0.5px; flex-shrink: 0;
+}
+.crqc-info-panel .info-row {
+  display: flex; justify-content: space-between;
+  border-bottom: 1px solid rgba(0,232,122,0.06); padding: 2px 0;
+}
+.crqc-info-panel .info-row:last-child { border-bottom: none; }
+.crqc-info-panel .info-key { color: rgba(0,232,122,0.4); }
+.crqc-info-panel .info-val { color: rgba(0,200,100,0.7); text-align: right; }
+.crqc-info-panel .info-val.warn { color: rgba(255,100,50,0.8); }
+.migrate-highlight { color: #ff8800; font-weight: 700; }
+/* ── PADLOCK TRANSITION (S3.4) ─────────────────────────────── */
+.lock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+.lock-svg {
+  width: 68px;
+  height: 68px;
+  overflow: visible;
+}
+/* Shackle group — pivot at bottom of shackle (cx=34, cy=34 in SVG space) */
+.lock-shackle {
+  transform-origin: 34px 38px;
+  transition: none;
+}
+/* Body group */
+.lock-body-rect { transition: fill 0.4s ease, filter 0.4s ease; }
+/* Default (locked) colours applied via attributes on the elements */
+
+/* ANIMATION: shackle rotates open + color shifts to threat */
+@keyframes shackle-open {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(-8deg); }          /* brief resistance */
+  100% { transform: rotate(-42deg) translateY(-6px); } /* shackle pops open */
+}
+@keyframes lock-color-shift {
+  0%   { color: #2a9fd6; }
+  100% { color: #ff5500; }
+}
+@keyframes lock-glow-pulse {
+  0%   { filter: drop-shadow(0 0 4px rgba(42,159,214,0.6)); }
+  40%  { filter: drop-shadow(0 0 18px rgba(255,85,0,0.95)) drop-shadow(0 0 6px rgba(255,85,0,0.7)); }
+  100% { filter: drop-shadow(0 0 8px rgba(255,85,0,0.5)); }
+}
+
+.lock-svg.lock-open .lock-shackle {
+  animation: shackle-open 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+.lock-svg.lock-open {
+  animation: lock-glow-pulse 1.0s ease-out forwards;
+}
+/* Colour of shackle + body strokes transitions via CSS filter on open */
+.lock-svg.lock-open .shackle-arc {
+  stroke: #ff5500;
+  transition: stroke 0.6s ease 0.4s;
+}
+.lock-svg.lock-open .body-fill {
+  fill: rgba(255,85,0,0.18);
+  stroke: rgba(255,85,0,0.7);
+  transition: fill 0.6s ease 0.4s, stroke 0.6s ease 0.4s;
+}
+.lock-svg.lock-open .keyhole-fill {
+  fill: rgba(255,85,0,0.5);
+  transition: fill 0.6s ease 0.4s;
+}
+.lock-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(42,159,214,0.7);
+  transition: color 0.6s ease 0.4s;
+}
+.lock-label.exposed {
+  color: rgba(255,85,0,0.85);
+  animation: ticker 0.5s steps(1) 4;
+}
+/* ── END PADLOCK ─────────────────────────────────────────────── */
+
+/* ERA 3 INITIAL STATE — harvest window callout + qubit meter */
+.crqc-prestate {
+  width: 100%;
+  background: rgba(255,85,0,0.05);
+  border: 1px solid rgba(255,85,0,0.22);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(255,120,0,0.55);
+  text-align: center;
+  flex-shrink: 0;
+  transition: opacity 0.5s ease;
+}
+.crqc-prestate .ps-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255,120,0,0.8);
+  margin-bottom: 2px;
+}
+.qubit-meter { width: 100%; flex-shrink: 0; }
+.qm-header {
+  display: flex; justify-content: space-between;
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: rgba(0,232,122,0.4); margin-bottom: 4px;
+}
+.qm-track {
+  width: 100%; height: 5px;
+  background: rgba(0,232,122,0.08);
+  border-radius: 2px; overflow: hidden;
+  border: 1px solid rgba(0,232,122,0.1);
+}
+.qm-fill {
+  height: 100%; width: 25%;
+  background: linear-gradient(90deg, rgba(0,232,122,0.35), rgba(0,232,122,0.75));
+  border-radius: 2px;
+  box-shadow: 0 0 5px rgba(0,232,122,0.3);
+  transition: width 0.4s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+#era3.crqc-active .qm-fill {
+  background: linear-gradient(90deg, rgba(255,85,0,0.6), rgba(255,85,0,1));
+  box-shadow: 0 0 6px rgba(255,85,0,0.6);
+}
+#era3.crqc-active .crqc-ring { border-color: rgba(0,232,122,0.8); }
+#decryptLogPanel {
+  display: none;
+  margin-top: 8px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,85,0,0.22);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  line-height: 1.65;
+}
+#decryptLogPanel .dlog-header {
+  color: rgba(255,85,0,0.7);
+  letter-spacing: 2px;
+  font-size: 9px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+#decryptLogPanel .dlog-entry {
+  color: rgba(0,232,122,0.55);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+#decryptLogPanel .dlog-entry.vis { opacity: 1; }
+#decryptLogPanel .dlog-entry.done { color: rgba(255,68,0,0.85); font-weight: 700; }
+#era3.crqc-active .crqc-center { box-shadow: 0 0 30px var(--quantum), 0 0 60px rgba(0,232,122,0.5); }
+
+/* ERA PROGRESS BAR */
+.era-progress {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: transparent; box-shadow: none;
+  transition: background 1.2s ease, box-shadow 1.2s ease;
+  border-radius: 0 0 14px 14px; z-index: 20;
+}
+#era1 .era-progress.progress-active { background: var(--safe-glow); box-shadow: 0 0 6px var(--safe-glow); }
+#era2 .era-progress.progress-active { background: var(--amber);     box-shadow: 0 0 6px var(--amber); }
+#era3 .era-progress.progress-active { background: var(--quantum);   box-shadow: 0 0 6px var(--quantum); }
+
+/* FLASH OVERLAY */
+#flash-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,255,120,0.08);
+  pointer-events: none; opacity: 0; z-index: 999;
+  transition: opacity 0.3s;
+}
+#flash-overlay.active { opacity: 1; }
+
+/* CONTROLS BAR */
+.controls-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: center; align-items: center;
+  gap: 10px; z-index: 200; padding: 8px 28px;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; padding: 7px 18px;
+  border-radius: 6px; cursor: pointer;
+  letter-spacing: 1px; text-transform: uppercase;
+  transition: all 0.2s ease; pointer-events: all;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+.ctrl-btn.primary { background: rgba(255,85,0,0.12); border-color: rgba(255,85,0,0.35); color: var(--threat-glow); }
+.ctrl-btn.primary:hover { background: rgba(255,85,0,0.22); }
+.ctrl-btn.quantum-btn { background: rgba(0,232,122,0.08); border-color: rgba(0,232,122,0.3); color: var(--quantum); }
+.ctrl-btn.quantum-btn:hover { background: rgba(0,232,122,0.15); }
+.ctrl-btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+/* ERA PROGRESS INDICATOR (S3.5) */
+.era-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+.era-pip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.era-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.18;
+  transition: background 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
+  flex-shrink: 0;
+}
+/* Past era: dim but visible */
+.era-pip.past {
+  background: var(--text);
+  opacity: 0.45;
+  box-shadow: none;
+}
+/* Active era: bright + glow */
+.era-pip.active {
+  opacity: 1;
+}
+.era-pip.active.pip-era1 {
+  background: var(--safe-glow);
+  box-shadow: 0 0 6px var(--safe-glow);
+}
+.era-pip.active.pip-era2 {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+.era-pip.active.pip-era3 {
+  background: var(--quantum);
+  box-shadow: 0 0 6px var(--quantum);
+}
+.era-pip-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* HOOK BAR */
+#hookBar {
+  display: none;
+  position: fixed; bottom: 88px; left: 0; right: 0;
+  background: #0d0f16;
+  border-top: 5px solid var(--threat-glow);
+  padding: 10px 32px;
+  z-index: 150; text-align: center;
+}
+#hookBar.visible { display: block; }
+#hookBar p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 600;
+  color: var(--text-bright); letter-spacing: 0.5px; line-height: 1.5;
+}
+#hookBar em { font-style: normal; color: var(--threat-glow); font-weight: 700; }
+
+/* ── ACCESSIBILITY: focus rings ── */
+:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--quantum);
+  outline-offset: 3px;
+}
+</style>
+</head>
+<body>
+
+<div id="flash-overlay"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 03 / 06</div>
+    <h1>HARVEST <span>NOW</span>, DECRYPT LATER</h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge">
+      <span class="sim-dot"></span>
+      SIMULATION
+    </div>
+  </div>
+</header>
+
+<!-- PHASE TIMELINE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper">
+    <div class="step step-era1 active" id="stepEra1">
+      <div class="step-dot"></div>
+      <div class="step-label">Today</div>
+    </div>
+    <div class="step-line" id="stepLine1"></div>
+    <div class="step step-era2" id="stepEra2">
+      <div class="step-dot"></div>
+      <div class="step-label">The Harvest</div>
+    </div>
+    <div class="step-line" id="stepLine2"></div>
+    <div class="step step-era3" id="stepEra3">
+      <div class="step-dot"></div>
+      <div class="step-label">The Reckoning</div>
+    </div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar" id="narrativeBar">
+  <div class="narrative-cell c1-active active-cell" id="ncell1">
+    <div class="ncell-label c1">ERA ONE &#8212; TODAY</div>
+    <div class="ncell-log" id="nlog1"></div>
+  </div>
+  <div class="narrative-cell" id="ncell2">
+    <div class="ncell-label c2">ERA TWO &#8212; THE WAIT</div>
+    <div class="ncell-log" id="nlog2"></div>
+  </div>
+  <div class="narrative-cell" id="ncell3">
+    <div class="ncell-label c3">ERA THREE &#8212; RECKONING</div>
+    <div class="ncell-log" id="nlog3"></div>
+  </div>
+</div>
+
+<!-- MAIN STAGE -->
+<div class="stage">
+
+  <!-- ERA 1: TODAY -->
+  <div class="era active" id="era1">
+    <div class="era-flash-layer"></div>
+    <div class="era-num-pill">ERA 01</div>
+    <div class="era-inner">
+      <div class="era-label">ERA ONE</div>
+      <div class="era-title">TODAY</div>
+      <div class="era-subtitle">2024 &#8212; ongoing</div>
+      <div class="network-viz" id="networkViz"></div>
+      <div class="era1-status status-safe" id="era1Status">&#10003; ENCRYPTION ACTIVE</div>
+      <div class="threat-ticker" id="threatTicker">&#9888; INTERCEPTION DETECTED &#8212; DATA DIVERTED TO ARCHIVE</div>
+    </div>
+    <div class="era-progress"></div>
+  </div>
+
+  <!-- ERA 2: THE WAIT -->
+  <div class="era" id="era2">
+    <div class="era-flash-layer"></div>
+    <div class="era-num-pill">ERA 02</div>
+    <div class="era-inner">
+      <div class="era-label">ERA TWO</div>
+      <div class="era-title">THE WAIT</div>
+      <div class="era-subtitle">Years pass. Archive grows.</div>
+      <div class="vault-container">
+        <div class="data-counter">
+          <span class="counter-value" id="dataCounter">0</span>
+          TB ARCHIVED &nbsp;&#183;&nbsp; <span id="recordCounter" style="color:var(--amber)">0</span> RECORDS
+        </div>
+        <div class="db-stack-wrap" style="height:175px;">
+          <div class="particles-container" id="particles"></div>
+          <svg id="dbSvg" width="100%" height="175" viewBox="0 0 310 175" preserveAspectRatio="xMidYMid meet" style="overflow:visible;display:block;">
+            <ellipse cx="105" cy="168" rx="76" ry="6" fill="rgba(0,0,0,0.5)"/>
+            <g id="dbl5" opacity="0.3">
+              <ellipse cx="105" cy="152" rx="73" ry="11" fill="#120906" stroke="rgba(255,90,0,0.25)" stroke-width="1"/>
+              <rect x="32" y="141" width="146" height="11" fill="#120906"/>
+              <ellipse cx="105" cy="141" rx="73" ry="11" fill="#1a0c05" stroke="rgba(255,90,0,0.3)" stroke-width="1"/>
+            </g>
+            <g id="lbl5" opacity="0.3">
+              <line x1="178" y1="141" x2="196" y2="135" stroke="rgba(255,90,0,0.4)" stroke-width="0.8"/>
+              <text x="199" y="138" font-family="Inconsolata,monospace" font-size="8.5" fill="rgba(255,105,0,0.75)" letter-spacing="0.5">COLD STORAGE</text>
+            </g>
+            <g id="dbl4" opacity="0.3">
+              <ellipse cx="105" cy="125" rx="73" ry="11" fill="#160a04" stroke="rgba(255,100,0,0.3)" stroke-width="1"/>
+              <rect x="32" y="114" width="146" height="11" fill="#160a04"/>
+              <ellipse cx="105" cy="114" rx="73" ry="11" fill="#1e0d05" stroke="rgba(255,100,0,0.35)" stroke-width="1"/>
+            </g>
+            <g id="lbl4" opacity="0.3">
+              <line x1="178" y1="114" x2="196" y2="110" stroke="rgba(255,100,0,0.45)" stroke-width="0.8"/>
+              <text x="199" y="113" font-family="Inconsolata,monospace" font-size="8.5" fill="rgba(255,115,0,0.8)" letter-spacing="0.5">HEALTH RECORDS</text>
+            </g>
+            <g id="dbl3" opacity="0.3">
+              <ellipse cx="105" cy="99" rx="73" ry="11" fill="#1a0b04" stroke="rgba(255,110,0,0.38)" stroke-width="1"/>
+              <rect x="32" y="88" width="146" height="11" fill="#1a0b04"/>
+              <ellipse cx="105" cy="88" rx="73" ry="11" fill="#220e05" stroke="rgba(255,110,0,0.38)" stroke-width="1"/>
+            </g>
+            <g id="lbl3" opacity="0.3">
+              <line x1="178" y1="88" x2="196" y2="85" stroke="rgba(255,110,0,0.5)" stroke-width="0.8"/>
+              <text x="199" y="88" font-family="Inconsolata,monospace" font-size="8.5" fill="rgba(255,130,0,0.85)" letter-spacing="0.5">GOV / COMMS</text>
+            </g>
+            <g id="dbl2" opacity="0.3">
+              <ellipse cx="105" cy="73" rx="73" ry="11" fill="#200c04" stroke="rgba(255,120,0,0.5)" stroke-width="1.2"/>
+              <rect x="32" y="62" width="146" height="11" fill="#200c04"/>
+              <ellipse cx="105" cy="62" rx="73" ry="11" fill="#280f05" stroke="rgba(255,120,0,0.5)" stroke-width="1.2"/>
+            </g>
+            <g id="lbl2" opacity="0.3">
+              <line x1="178" y1="62" x2="196" y2="60" stroke="rgba(255,120,0,0.55)" stroke-width="0.8"/>
+              <text x="199" y="63" font-family="Inconsolata,monospace" font-size="8.5" fill="rgba(255,145,0,0.9)" letter-spacing="0.5">TLS / VPN SESSIONS</text>
+            </g>
+            <g id="dbl1" opacity="0.3">
+              <ellipse cx="105" cy="47" rx="73" ry="11" fill="#260e04" stroke="rgba(255,150,0,0.7)" stroke-width="1.5"/>
+              <rect x="32" y="36" width="146" height="11" fill="#240d04"/>
+              <ellipse cx="105" cy="36" rx="73" ry="11" fill="#2e1006" stroke="rgba(255,160,0,0.7)" stroke-width="1.5"/>
+            </g>
+            <g id="lbl1" opacity="0.3">
+              <line x1="178" y1="36" x2="196" y2="36" stroke="rgba(255,150,0,0.7)" stroke-width="0.8"/>
+              <text x="199" y="39" font-family="Inconsolata,monospace" font-size="8.5" fill="rgba(255,175,0,1)" letter-spacing="0.5">FINANCIAL / AUTH</text>
+            </g>
+            <ellipse id="dbWriteGlow" cx="105" cy="36" rx="73" ry="11" fill="none" stroke="rgba(255,85,0,0)" stroke-width="2.5" style="transition:stroke 0.5s"/>
+            <g id="dbLockBadge" style="transition:opacity 1.5s;">
+              <ellipse cx="105" cy="36" rx="27" ry="10" fill="rgba(8,4,0,0.9)" stroke="rgba(255,136,0,0.7)" stroke-width="1.2"/>
+              <text x="105" y="40" text-anchor="middle" font-family="Inconsolata,monospace" font-size="11">&#x1F512;</text>
+            </g>
+            <g id="dbUnlockBadge" style="opacity:0;transition:opacity 1.5s;">
+              <ellipse cx="105" cy="36" rx="29" ry="11" fill="rgba(0,18,8,0.92)" stroke="rgba(0,232,122,0.8)" stroke-width="1.5"/>
+              <text x="105" y="40" text-anchor="middle" font-family="Inconsolata,monospace" font-size="11">&#x1F513;</text>
+            </g>
+          </svg>
+        </div>
+        <div class="archive-classification">
+          ADVERSARY ARCHIVE &nbsp;&#183;&nbsp; NATION-STATE COLLECTION<br>
+          <span id="archiveStatus" style="color:rgba(255,85,0,0.5)">WRITE-ONLY &nbsp;&#183;&nbsp; ENCRYPTED AT REST</span>
+        </div>
+        <div class="archive-log" id="archiveLog">
+          <div class="log-entries" id="logEntries"></div>
+        </div>
+      </div>
+    </div>
+    <div class="era-progress"></div>
+  </div>
+
+  <!-- ERA 3: THE RECKONING -->
+  <div class="era" id="era3">
+    <div class="era-flash-layer"></div>
+    <div class="era-num-pill">ERA 03</div>
+    <div class="era-inner">
+      <div class="era-label">ERA THREE</div>
+      <div class="era-title">THE RECKONING</div>
+      <div class="era-subtitle">~2030&#8211;2035 estimate</div>
+      <div class="crqc-container">
+        <div class="crqc-prestate" id="crqcPrestate">
+          <div class="ps-label">&#9888; HARVEST WINDOW CLOSING</div>
+          CRQC THRESHOLD ~2030&#8211;2035 &#x00b7; MIGRATION RUNWAY ACTIVE
+        </div>
+        <div class="crqc-core">
+          <div class="crqc-ring"></div>
+          <div class="crqc-ring"></div>
+          <div class="crqc-ring"></div>
+          <div class="crqc-center">&#9883;</div>
+        </div>
+        <div class="crqc-status offline" id="crqcStatus">
+          CRQC STATUS<br>
+          <span id="crqcStatusVal" style="font-size:14px;font-weight:700;letter-spacing:2px;color:var(--text-dim)">OFFLINE</span>
+        </div>
+        <div class="qubit-meter">
+          <div class="qm-header">
+            <span>LOGICAL QUBITS</span>
+            <span id="qubitCount">~1,000 / 4,000</span>
+          </div>
+          <div class="qm-track"><div class="qm-fill" id="qubitBar"></div></div>
+        </div>
+        <!-- S3.4: Padlock transition — locked → exposed -->
+        <div class="lock-wrap" id="lockWrap">
+          <svg class="lock-svg" id="lockIcon" viewBox="0 0 68 68" xmlns="http://www.w3.org/2000/svg" aria-label="Padlock">
+            <!-- Shackle (U-arch) — rotates open on unlock -->
+            <g class="lock-shackle" id="lockShackle">
+              <path class="shackle-arc"
+                d="M20 38 L20 26 Q20 12 34 12 Q48 12 48 26 L48 38"
+                fill="none"
+                stroke="#2a9fd6"
+                stroke-width="5"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+            </g>
+            <!-- Lock body -->
+            <rect class="body-fill"
+              x="12" y="36" width="44" height="28" rx="5" ry="5"
+              fill="rgba(42,159,214,0.15)"
+              stroke="#2a9fd6"
+              stroke-width="1.8"/>
+            <!-- Keyhole -->
+            <circle class="keyhole-fill" cx="34" cy="48" r="5" fill="rgba(42,159,214,0.45)"/>
+            <rect class="keyhole-fill" x="31" y="48" width="6" height="7" rx="1" fill="rgba(42,159,214,0.45)"/>
+          </svg>
+          <div class="lock-label" id="lockLabel">ENCRYPTED</div>
+        </div>
+        <!-- END S3.4 padlock -->
+
+        <div class="decrypted-items" id="decryptedItems">
+          <div class="decrypt-item">
+            <span class="d-icon">&#x1F3DB;</span>
+            <span class="d-label">STATE SECRETS</span>
+            <span class="d-val">ENCRYPTED</span>
+          </div>
+          <div class="decrypt-item">
+            <span class="d-icon">&#x1F3E5;</span>
+            <span class="d-label">MEDICAL RECORDS</span>
+            <span class="d-val">ENCRYPTED</span>
+          </div>
+          <div class="decrypt-item">
+            <span class="d-icon">&#x1F3E6;</span>
+            <span class="d-label">FINANCIAL DATA</span>
+            <span class="d-val">ENCRYPTED</span>
+          </div>
+          <div class="decrypt-item">
+            <span class="d-icon">&#x1F511;</span>
+            <span class="d-label">AUTH TOKENS</span>
+            <span class="d-val">ENCRYPTED</span>
+          </div>
+          <div class="decrypt-item">
+            <span class="d-icon">&#x1FAAA;</span>
+            <span class="d-label">IDENTITY DATA</span>
+            <span class="d-val">ENCRYPTED</span>
+          </div>
+        </div>
+        <div class="crqc-info-panel">
+          <div class="info-row"><span class="info-key">ALGORITHM</span><span class="info-val">Shor's (1994)</span></div>
+          <div class="info-row"><span class="info-key">TARGET</span><span class="info-val warn">RSA-2048 / ECC P-256</span></div>
+          <div class="info-row"><span class="info-key">QUBITS REQ.</span><span class="info-val">~4,000 logical</span></div>
+          <div class="info-row"><span class="info-key">CRQC ETA</span><span class="info-val warn">2030&#8211;2035 est.</span></div>
+          <div class="info-row"><span class="info-key">NIST PQC STD</span><span class="info-val">FIPS 203/204 (2024)</span></div>
+          <div class="info-row"><span class="info-key">MIGRATE BY</span><span class="info-val migrate-highlight">NOW &#8212; 5&#8211;10yr runway</span></div>
+        </div>
+        <div id="decryptLogPanel">
+          <div class="dlog-header">&#x25B6; Archive Decrypt Log &#x2014; Retroactive</div>
+          <div class="dlog-entry" id="dlog0">Loading archived session index&#8230;</div>
+          <div class="dlog-entry" id="dlog1">RSA-2048 private key recovered (3.2h) &#x2713;</div>
+          <div class="dlog-entry" id="dlog2">TLS sessions 2024&#8211;2027: now plaintext &#x2713;</div>
+          <div class="dlog-entry done" id="dlog3">&#x26A0; 847 TB EXPOSED &#x2014; ALL ARCHIVED DATA READABLE</div>
+        </div>
+      </div>
+    </div>
+    <div class="era-progress"></div>
+  </div>
+
+</div>
+
+<!-- HOOK BAR -->
+<div id="hookBar">
+  <p>Your encrypted traffic is being harvested <em>right now</em>. When a CRQC arrives, it is already too late &#8212; the data exists. <em>Migrate to PQC before the window closes.</em></p>
+</div>
+
+<!-- CONTROLS BAR -->
+<div class="controls-bar">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevStep()" aria-label="Previous era" disabled>&#8592; PREV</button>
+  <div class="era-indicator" id="eraIndicator" aria-live="polite" aria-label="Era progress">
+    <div class="era-pip-row">
+      <div class="era-pip pip-era1 active" id="pip1"></div>
+      <div class="era-pip pip-era2" id="pip2"></div>
+      <div class="era-pip pip-era3" id="pip3"></div>
+    </div>
+    <span class="era-pip-label" id="eraLabel">ERA 1 / 3</span>
+  </div>
+  <button class="ctrl-btn primary" id="btnNext" onclick="nextStep()" aria-label="Next era">NEXT &#8594;</button>
+  <button class="ctrl-btn" onclick="resetDemo()" aria-label="Reset demo">&#8635; RESET</button>
+  <a href="scene4_lattice_interactive.html" id="nextSceneBtn" aria-label="Continue to Scene 04: The Lattice Wall"
+     style="display:none; text-decoration:none; font-family:'Inconsolata',monospace;
+            font-size:12px; letter-spacing:2px; color:#07080d; background:var(--quantum);
+            padding:6px 14px; border-radius:3px; font-weight:700;">
+    &rarr; SCENE 04
+  </a>
+</div>
+
+<script>
+// STATE
+var currentStep = 1;   // 1 | 2 | 3
+var intercepting = false;
+var dataBytes = 0;
+var crqcTriggered = false;
+
+// Step → synthetic progress percentage used by narrative/stepper helpers
+// Step 1 = era1 fully active (pct 5)
+// Step 2 = era2 fully active (pct 55)
+// Step 3 = era3 fully active (pct 100)
+var STEP_PCT = { 1: 5, 2: 55, 3: 100 };
+
+// CHANNELS
+var channels = [
+  { label: 'TLS 1.3', proto: 'RSA-2048 + AES-256-GCM', delay: '0s',   duration: '2.2s', type: 'tls'   },
+  { label: 'VPN',     proto: 'ECDH P-256 + ChaCha20',  delay: '0.7s',  duration: '1.8s', type: 'vpn'   },
+  { label: 'HTTPS',   proto: 'RSA-2048 handshake',      delay: '1.4s',  duration: '2.5s', type: 'https' },
+  { label: 'EMAIL',   proto: 'S/MIME RSA-2048',         delay: '0.3s',  duration: '3s',   type: 'email' },
+  { label: 'GOV',     proto: 'RSA-4096 classified',     delay: '1.1s',  duration: '1.6s', type: 'gov'   },
+];
+
+function buildNetwork() {
+  var viz = document.getElementById('networkViz');
+  channels.forEach(function(ch, i) {
+    var div = document.createElement('div');
+    div.className = 'comm-channel';
+    div.id = 'ch' + i;
+    // Outer label container
+    var outer = document.createElement('div');
+    outer.style.cssText = 'display:flex;flex-direction:column;width:84px;flex-shrink:0;';
+    var lbl = document.createElement('div');
+    lbl.className = 'comm-label';
+    lbl.textContent = ch.label;
+    var pt = document.createElement('div');
+    pt.className = 'proto-tag';
+    pt.id = 'pt' + i;
+    pt.textContent = ch.proto;
+    outer.appendChild(lbl);
+    outer.appendChild(pt);
+    // Track + packet
+    var track = document.createElement('div');
+    track.className = 'comm-track';
+    var pkt = document.createElement('div');
+    pkt.className = 'packet safe';
+    pkt.style.animationDuration = ch.duration;
+    pkt.style.animationDelay = ch.delay;
+    track.appendChild(pkt);
+    // Intercept tap
+    var tap = document.createElement('div');
+    tap.className = 'intercept-tap';
+    div.appendChild(outer);
+    div.appendChild(track);
+    div.appendChild(tap);
+    viz.appendChild(div);
+  });
+}
+
+// ARCHIVE LOG
+var logTemplates = [
+  { type:'tls',    label:'TLS',    detail: function() { return 'session ' + randHex(6) + ' \u00b7 ' + (Math.random()*200+50).toFixed(0) + 'KB'; } },
+  { type:'vpn',    label:'VPN',    detail: function() { return 'tunnel ' + randHex(4) + ' \u00b7 ' + (Math.random()*2+0.5).toFixed(1) + 'MB'; } },
+  { type:'https',  label:'HTTPS',  detail: function() { return 'host:' + randHost() + ' \u00b7 cert RSA-2048'; } },
+  { type:'email',  label:'EMAIL',  detail: function() { return 'msg-id ' + randHex(8) + '@smtp \u00b7 S/MIME'; } },
+  { type:'gov',    label:'GOV',    detail: function() { return 'session RSA-4096 \u00b7 ' + (Math.random()*50+10).toFixed(0) + 'KB'; } },
+  { type:'health', label:'HEALTH', detail: function() { return 'HL7-FHIR \u00b7 patient-id ' + randHex(4) + ' \u00b7 TLS'; } },
+  { type:'fin',    label:'FIN',    detail: function() { return 'acct:****' + Math.floor(Math.random()*9000+1000) + ' \u00b7 AES-256'; } },
+];
+function randHex(n) { return Array.from({length:n},function(){return '0123456789abcdef'[Math.floor(Math.random()*16)];}).join(''); }
+function randHost() { var h=['bank-cdn.net','gov-mail.org','health-api.io','corp-vpn.net','secure-auth.com']; return h[Math.floor(Math.random()*h.length)]; }
+function nowTs() { var d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0'); }
+
+var MAX_LOG_ENTRIES = 16;
+var logCount = 0;
+var recordTotal = 0;
+
+function addLogEntry() {
+  var tmpl = logTemplates[Math.floor(Math.random() * logTemplates.length)];
+  var container = document.getElementById('logEntries');
+  if (!container) return;
+  var el = document.createElement('div');
+  el.className = 'log-entry';
+  // Build child nodes with textContent to avoid innerHTML
+  var ts = document.createElement('span'); ts.className = 'log-ts'; ts.textContent = nowTs();
+  var lt = document.createElement('span'); lt.className = 'log-type ' + tmpl.type; lt.textContent = '[' + tmpl.label + ']';
+  var ld = document.createElement('span'); ld.className = 'log-detail'; ld.textContent = tmpl.detail();
+  el.appendChild(ts); el.appendChild(lt); el.appendChild(ld);
+  container.insertBefore(el, container.firstChild);
+  requestAnimationFrame(function() { el.classList.add('visible'); });
+  while (container.children.length > MAX_LOG_ENTRIES) { container.removeChild(container.lastChild); }
+  recordTotal += Math.floor(Math.random() * 800 + 200);
+  document.getElementById('recordCounter').textContent = recordTotal.toLocaleString();
+  logCount++;
+}
+
+// DB LAYER OPACITY ANIMATION
+var dbLayers = ['dbl1','dbl2','dbl3','dbl4','dbl5'];
+var dbLabels = ['lbl1','lbl2','lbl3','lbl4','lbl5'];
+function updateDbLayers(vaultProg) {
+  dbLayers.forEach(function(id, i) {
+    var el  = document.getElementById(id);
+    var lbl = document.getElementById(dbLabels[i]);
+    if (!el) return;
+    var threshold = i * 0.18;
+    var layerProg = Math.max(0, Math.min(1, (vaultProg - threshold) / 0.18));
+    var opacity   = 0.25 + layerProg * 0.75;
+    el.style.opacity  = opacity;
+    if (lbl) lbl.style.opacity = opacity;
+    if (i === 0 && vaultProg > 0.05) {
+      var glow = document.getElementById('dbWriteGlow');
+      if (glow) glow.setAttribute('stroke', 'rgba(255,85,0,' + (0.25 + Math.sin(Date.now()/400)*0.2) + ')');
+    }
+  });
+}
+
+// PARTICLES
+var dataBits = ['A3F2', 'E9C1', '7B4D', 'RSA', 'TLS', '2048', 'CA8F', 'KEY', 'IV:', '0x3F'];
+function spawnParticle() {
+  var container = document.getElementById('particles');
+  if (!container) return;
+  var bit = document.createElement('div');
+  bit.className = 'data-bit';
+  bit.textContent = dataBits[Math.floor(Math.random() * dataBits.length)];
+  bit.style.left = (15 + Math.random() * 70) + '%';
+  bit.style.animationDuration = (0.7 + Math.random() * 0.6) + 's';
+  container.appendChild(bit);
+  setTimeout(function() { if (bit.parentNode) bit.parentNode.removeChild(bit); }, 1400);
+}
+
+// NARRATIVE STATES
+var narrativeStates = {
+  n1: [
+    { at:  0, cls: '',     text: 'Your communications are encrypted \u2014 RSA and ECC protect every session you send right now.', emParts: ['RSA and ECC protect every session'] },
+    { at: 15, cls: 'warn', text: '\u26a0 Active interception detected. Traffic is being copied in-flight \u2014 still encrypted, but no longer private.', emParts: ['copied in-flight'] },
+  ],
+  n2: [
+    { at:  0, cls: '',     text: 'Nation-state actors are archiving intercepted traffic today \u2014 encrypted, patient, waiting for the right tool.', emParts: ['archiving intercepted traffic today'] },
+    { at: 20, cls: 'warn', text: 'The archive is growing in real time. Every TLS session, VPN tunnel, and gov communication is logged and stored.', emParts: ['growing in real time'] },
+    { at: 55, cls: 'warn', text: 'Hundreds of terabytes stockpiled. Doctrine: collect now, decrypt when a CRQC exists. That window is closing fast.', emParts: ['collect now, decrypt when a CRQC exists'] },
+  ],
+  n3: [
+    { at:  0, cls: '',      text: 'A CRQC running Shor\u2019s algorithm retroactively decrypts the entire archive \u2014 years of secrets, exposed in hours.', emParts: ['retroactively decrypts the entire archive'] },
+    { at: 65, cls: '',      text: 'NIST finalized PQC standards in 2024 \u2014 Kyber and Dilithium replace RSA/ECC. Migration window: 5\u201310 years. Clock is running.', emParts: ['Kyber and Dilithium replace RSA/ECC'] },
+    { at: 85, cls: 'alert', text: '\u29b3 CRQC ONLINE. Shor\u2019s running against RSA-2048. The archive is being decrypted now.', emParts: ['The archive is being decrypted now'] },
+    { at: 95, cls: 'alert', text: '\uD83D\uDD13 Complete. State secrets, medical records, financial data \u2014 every byte collected is now plaintext.', emParts: ['every byte collected is now plaintext'] },
+  ],
+};
+
+var narrativeShown = { n1: -1, n2: -1, n3: -1 };
+
+// Build narrative entry using DOM (safe, no innerHTML on user data)
+function buildNarrativeEl(text, emParts, cls) {
+  var entry = document.createElement('div');
+  entry.className = 'ncell-entry' + (cls ? ' ' + cls : '');
+  // Highlight emParts by splitting and wrapping
+  var remaining = text;
+  var frag = document.createDocumentFragment();
+  (emParts || []).forEach(function(part) {
+    var idx = remaining.indexOf(part);
+    if (idx === -1) return;
+    if (idx > 0) frag.appendChild(document.createTextNode(remaining.slice(0, idx)));
+    var em = document.createElement('em');
+    em.textContent = part;
+    frag.appendChild(em);
+    remaining = remaining.slice(idx + part.length);
+  });
+  if (remaining) frag.appendChild(document.createTextNode(remaining));
+  entry.appendChild(frag);
+  return entry;
+}
+
+function appendNarrativeEntry(logId, text, emParts, cls) {
+  var log = document.getElementById(logId);
+  if (!log) return;
+  log.querySelectorAll('.ncell-entry').forEach(function(e) { e.classList.add('stale'); });
+  var entry = buildNarrativeEl(text, emParts, cls);
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function updateNarrative(pct) {
+  [['n1','nlog1','ncell1','c1-active',  0],
+   ['n2','nlog2','ncell2','c2-active', 15],
+   ['n3','nlog3','ncell3','c3-active', 65]
+  ].forEach(function(row) {
+    var key = row[0], logId = row[1], cellId = row[2], activeClass = row[3], activateAt = row[4];
+    var states = narrativeStates[key];
+    var cell   = document.getElementById(cellId);
+    var latestIdx = -1;
+    for (var i = 0; i < states.length; i++) {
+      if (pct >= states[i].at) latestIdx = i;
+    }
+    if (latestIdx > narrativeShown[key]) {
+      for (var j = narrativeShown[key] + 1; j <= latestIdx; j++) {
+        appendNarrativeEntry(logId, states[j].text, states[j].emParts, states[j].cls);
+      }
+      narrativeShown[key] = latestIdx;
+    }
+    if (cell) {
+      var isActive = pct >= activateAt;
+      cell.classList.toggle('active-cell', isActive);
+      cell.classList.toggle(activeClass,   isActive);
+    }
+  });
+}
+
+// STEPPER UPDATE
+function updateStepper(pct) {
+  var era1Step = document.getElementById('stepEra1');
+  var era2Step = document.getElementById('stepEra2');
+  var era3Step = document.getElementById('stepEra3');
+  var line1    = document.getElementById('stepLine1');
+  var line2    = document.getElementById('stepLine2');
+  if (pct >= 1)  era1Step.classList.add('active');
+  else           era1Step.classList.remove('active');
+  if (pct >= 15) { era2Step.classList.add('active'); line1.classList.add('line-active-era2'); }
+  else           { era2Step.classList.remove('active'); line1.classList.remove('line-active-era2'); }
+  if (pct >= 73) { era3Step.classList.add('active'); line2.classList.add('line-active-era3'); }
+  else           { era3Step.classList.remove('active'); line2.classList.remove('line-active-era3'); }
+  // S3.5: update pip progress indicator
+  var eraNum = pct < 15 ? 1 : pct < 73 ? 2 : 3;
+  var pip1 = document.getElementById('pip1');
+  var pip2 = document.getElementById('pip2');
+  var pip3 = document.getElementById('pip3');
+  var eraLabel = document.getElementById('eraLabel');
+  if (pip1 && pip2 && pip3 && eraLabel) {
+    // Reset all pips
+    pip1.className = 'era-pip pip-era1';
+    pip2.className = 'era-pip pip-era2';
+    pip3.className = 'era-pip pip-era3';
+    if (eraNum === 1) {
+      pip1.classList.add('active');
+    } else if (eraNum === 2) {
+      pip1.classList.add('past');
+      pip2.classList.add('active');
+    } else {
+      pip1.classList.add('past');
+      pip2.classList.add('past');
+      pip3.classList.add('active');
+    }
+    eraLabel.textContent = 'ERA ' + eraNum + ' / 3';
+  }
+}
+
+// ── STEP NAVIGATION ─────────────────────────────────────────────
+function goToStep(n) {
+  if (n < 1 || n > 3) return;
+  var prev = currentStep;
+  currentStep = n;
+
+  var pct = STEP_PCT[n];
+  updateNarrative(pct);
+  updateStepper(pct);
+
+  // Era progress bar bottom line — show for active + past eras
+  document.querySelector('#era1 .era-progress').classList.toggle('progress-active', n >= 1);
+  document.querySelector('#era2 .era-progress').classList.toggle('progress-active', n >= 2);
+  document.querySelector('#era3 .era-progress').classList.toggle('progress-active', n >= 3);
+
+  // Flash the newly entered era panel
+  if (n > prev) { triggerEraFlash('era' + n); }
+
+  // ── ERA 1 → entering (n=1) always safe; entering n>=2 shows interception ──
+  if (n >= 2 && !intercepting) {
+    intercepting = true;
+    document.querySelectorAll('.comm-channel').forEach(function(ch) { ch.classList.add('intercepting'); });
+    document.getElementById('era1Status').className = 'era1-status status-warning';
+    document.getElementById('era1Status').textContent = '\u26a0 INTERCEPTION DETECTED';
+    document.getElementById('threatTicker').classList.add('visible');
+    document.querySelectorAll('.packet').forEach(function(p) { p.classList.replace('safe','intercepted'); });
+    document.querySelectorAll('.proto-tag').forEach(function(pt) { pt.classList.add('intercepted-tag'); });
+    for (var i = 0; i < 3; i++) { (function(idx){ setTimeout(addLogEntry, idx * 300); })(i); }
+  } else if (n < 2 && intercepting) {
+    // Going back to step 1 — restore safe state
+    intercepting = false;
+    document.querySelectorAll('.comm-channel').forEach(function(ch) { ch.classList.remove('intercepting'); });
+    document.getElementById('era1Status').className = 'era1-status status-safe';
+    document.getElementById('era1Status').textContent = '\u2713 ENCRYPTION ACTIVE';
+    document.getElementById('threatTicker').classList.remove('visible');
+    document.querySelectorAll('.packet').forEach(function(p) { p.classList.remove('intercepted'); p.classList.add('safe'); });
+    document.querySelectorAll('.proto-tag').forEach(function(pt) { pt.classList.remove('intercepted-tag'); });
+  }
+
+  // ── ERA 2: populate archive when entering step 2+ ──
+  if (n >= 2) {
+    dataBytes = 847;
+    document.getElementById('dataCounter').textContent = dataBytes.toLocaleString();
+    updateDbLayers(1);
+    // Burst of log entries and particles to populate the archive display
+    for (var k = 0; k < 8; k++) { (function(ki){ setTimeout(addLogEntry, ki * 120); })(k); }
+    for (var p2 = 0; p2 < 5; p2++) { (function(pi){ setTimeout(spawnParticle, pi * 180); })(p2); }
+  }
+
+  // ── Qubit meter ──
+  var qb = document.getElementById('qubitBar');
+  var qc = document.getElementById('qubitCount');
+  if (qb && qc) {
+    if (n < 3) {
+      qb.style.width = '25%';
+      qc.textContent = '~1,000 / 4,000';
+    } else {
+      qb.style.width = '100%';
+      qc.textContent = '~4,096 / 4,000';
+    }
+  }
+
+  // ── ERA 3: if leaving step 3, undo CRQC state so it can re-fire ──
+  if (prev === 3 && n < 3) {
+    crqcTriggered = false;
+    document.getElementById('era3').classList.remove('crqc-active');
+    document.getElementById('crqcStatus').classList.remove('online');
+    document.getElementById('crqcStatus').classList.add('offline');
+    document.getElementById('crqcStatusVal').textContent = 'OFFLINE';
+    document.getElementById('crqcStatusVal').style.color = 'var(--text-dim)';
+    var ps3 = document.getElementById('crqcPrestate');
+    if (ps3) ps3.style.opacity = '1';
+    // Reset padlock
+    var lsvg = document.getElementById('lockIcon');
+    var llbl = document.getElementById('lockLabel');
+    if (lsvg) {
+      lsvg.classList.remove('lock-open');
+      var sa = lsvg.querySelector('.shackle-arc');
+      var bf = lsvg.querySelector('.body-fill');
+      var kh = lsvg.querySelectorAll('.keyhole-fill');
+      if (sa) sa.style.cssText = '';
+      if (bf) bf.style.cssText = '';
+      kh.forEach(function(el) { el.style.cssText = ''; });
+    }
+    if (llbl) { llbl.textContent = 'ENCRYPTED'; llbl.classList.remove('exposed'); }
+    // Reset decrypt items
+    document.querySelectorAll('.decrypt-item').forEach(function(item) {
+      item.classList.remove('revealed');
+      item.querySelector('.d-val').textContent = 'ENCRYPTED';
+    });
+    var dlp = document.getElementById('decryptLogPanel');
+    if (dlp) dlp.style.display = 'none';
+    ['dlog0','dlog1','dlog2','dlog3'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.classList.remove('vis');
+    });
+    // Reset qubit meter
+    var qbr = document.getElementById('qubitBar');
+    var qcr = document.getElementById('qubitCount');
+    if (qbr) qbr.style.width = '25%';
+    if (qcr) qcr.textContent = '~1,000 / 4,000';
+    // Restore DB to orange (not green-shifted)
+    dbLayers.forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.style.filter = '';
+    });
+    var lockBadge   = document.getElementById('dbLockBadge');
+    var unlockBadge = document.getElementById('dbUnlockBadge');
+    var archiveStatus = document.getElementById('archiveStatus');
+    if (lockBadge)   lockBadge.style.opacity = '1';
+    if (unlockBadge) unlockBadge.style.opacity = '0';
+    if (archiveStatus) {
+      archiveStatus.textContent = 'WRITE-ONLY \u00b7 ENCRYPTED AT REST';
+      archiveStatus.style.color = 'rgba(255,85,0,0.5)';
+    }
+  }
+
+  // ── ERA 3: CRQC attack ──
+  if (n === 3 && !crqcTriggered) {
+    triggerCRQC();
+  }
+
+  // ── Hook bar + next-scene link on step 3 ──
+  if (n === 3) {
+    document.getElementById('hookBar').classList.add('visible');
+    document.getElementById('nextSceneBtn').style.display = 'inline-block';
+  } else {
+    document.getElementById('hookBar').classList.remove('visible');
+    document.getElementById('nextSceneBtn').style.display = 'none';
+  }
+
+  // Update PREV / NEXT button disabled states
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  if (btnPrev) btnPrev.disabled = (currentStep === 1);
+  if (btnNext) btnNext.disabled = (currentStep === 3);
+}
+
+function nextStep() { goToStep(currentStep + 1); }
+function prevStep() { goToStep(currentStep - 1); }
+
+function triggerCRQC() {
+  if (crqcTriggered) return;
+  crqcTriggered = true;
+  var statusEl  = document.getElementById('crqcStatus');
+  var statusVal = document.getElementById('crqcStatusVal');
+  statusEl.classList.replace('offline','online');
+  statusVal.style.color = 'var(--quantum)';
+  var statuses = ['INITIALIZING...', 'LOADING SHOR\u2019S...', 'QUBITS: 4,096', 'FACTORING RSA-2048...', 'PERIOD FOUND: r=12', 'ONLINE'];
+  var si = 0;
+  var statusInterval = setInterval(function() {
+    if (si < statuses.length) {
+      statusVal.textContent = statuses[si++];
+    } else {
+      clearInterval(statusInterval);
+      var lockBadge   = document.getElementById('dbLockBadge');
+      var unlockBadge = document.getElementById('dbUnlockBadge');
+      var archiveStatus = document.getElementById('archiveStatus');
+      if (lockBadge)   lockBadge.style.opacity = '0';
+      if (unlockBadge) unlockBadge.style.opacity = '1';
+      if (archiveStatus) {
+        archiveStatus.textContent = 'READ ACCESS GRANTED \u00b7 DECRYPTING';
+        archiveStatus.style.color = 'rgba(255,60,20,0.9)';
+      }
+      dbLayers.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.filter = 'hue-rotate(120deg) brightness(1.4)';
+      });
+      document.getElementById('era3').classList.add('crqc-active');
+      var ps = document.getElementById('crqcPrestate');
+      if (ps) ps.style.opacity = '0';
+      revealDecryptedItems();
+    }
+  }, 550);
+}
+
+function triggerLockOpen() {
+  var svg   = document.getElementById('lockIcon');
+  var label = document.getElementById('lockLabel');
+  if (!svg) return;
+  // Force reflow so animation replays cleanly if called again
+  svg.classList.remove('lock-open');
+  void svg.offsetWidth;
+  svg.classList.add('lock-open');
+  if (label) {
+    label.textContent = 'EXPOSED';
+    label.classList.add('exposed');
+  }
+}
+
+function revealDecryptedItems() {
+  // S3.4: fire padlock animation immediately when decrypt begins
+  triggerLockOpen();
+
+  var items = document.querySelectorAll('.decrypt-item');
+  items.forEach(function(item, i) {
+    setTimeout(function() {
+      item.classList.add('revealed');
+      item.querySelector('.d-val').textContent = 'EXPOSED \u26a0';
+    }, i * 400);
+  });
+  // Retroactive decrypt log — appears after all items are revealed
+  var delay = items.length * 400 + 300;
+  setTimeout(function() {
+    var panel = document.getElementById('decryptLogPanel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    ['dlog0','dlog1','dlog2','dlog3'].forEach(function(id, i) {
+      setTimeout(function() {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('vis');
+      }, i * 550);
+    });
+  }, delay);
+}
+
+function triggerEraFlash(eraId) {
+  var el = document.getElementById(eraId);
+  if (!el) return;
+  el.classList.remove('phase-flash');
+  void el.offsetWidth;
+  el.classList.add('phase-flash');
+  el.addEventListener('animationend', function() { el.classList.remove('phase-flash'); }, { once: true });
+}
+
+function resetDemo() {
+  currentStep = 1; intercepting = false;
+  crqcTriggered = false; logCount = 0; recordTotal = 0;
+  ['nlog1','nlog2','nlog3'].forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=''; });
+  narrativeShown.n1 = -1; narrativeShown.n2 = -1; narrativeShown.n3 = -1;
+  ['ncell1','ncell2','ncell3'].forEach(function(id) { var el=document.getElementById(id); if(el) el.className='narrative-cell'; });
+  document.getElementById('ncell1').classList.add('c1-active','active-cell');
+  document.querySelectorAll('.era-progress').forEach(function(el) { el.classList.remove('progress-active'); });
+  document.getElementById('dataCounter').textContent = '0';
+  document.getElementById('recordCounter').textContent = '0';
+  document.getElementById('era1Status').className = 'era1-status status-safe';
+  document.getElementById('era1Status').textContent = '\u2713 ENCRYPTION ACTIVE';
+  document.getElementById('threatTicker').classList.remove('visible');
+  document.getElementById('era3').classList.remove('crqc-active');
+  document.getElementById('crqcStatus').classList.remove('online');
+  document.getElementById('crqcStatus').classList.add('offline');
+  document.getElementById('crqcStatusVal').textContent = 'OFFLINE';
+  document.getElementById('crqcStatusVal').style.color = 'var(--text-dim)';
+  document.getElementById('flash-overlay').classList.remove('active');
+  document.getElementById('hookBar').classList.remove('visible');
+  document.getElementById('nextSceneBtn').style.display = 'none';
+  dbLayers.forEach(function(id) { var el=document.getElementById(id); if(el){el.style.opacity='0.3';el.style.filter='';} });
+  var lockBadge=document.getElementById('dbLockBadge'); if(lockBadge) lockBadge.style.opacity='1';
+  var unlockBadge=document.getElementById('dbUnlockBadge'); if(unlockBadge) unlockBadge.style.opacity='0';
+  var archiveStatus=document.getElementById('archiveStatus');
+  if(archiveStatus){archiveStatus.textContent='WRITE-ONLY \u00b7 ENCRYPTED AT REST';archiveStatus.style.color='rgba(255,85,0,0.5)';}
+  var writeGlow=document.getElementById('dbWriteGlow'); if(writeGlow) writeGlow.setAttribute('stroke','rgba(255,85,0,0)');
+  var logEntries=document.getElementById('logEntries'); if(logEntries) logEntries.textContent='';
+  document.querySelectorAll('.comm-channel').forEach(function(ch){ch.classList.remove('intercepting');});
+  document.querySelectorAll('.packet').forEach(function(p){p.classList.remove('intercepted');p.classList.add('safe');});
+  document.querySelectorAll('.proto-tag').forEach(function(pt){pt.classList.remove('intercepted-tag');});
+  document.querySelectorAll('.decrypt-item').forEach(function(item){
+    item.classList.remove('revealed');
+    item.querySelector('.d-val').textContent='ENCRYPTED';
+  });
+  var ps = document.getElementById('crqcPrestate');
+  if (ps) ps.style.opacity = '1';
+  var qb = document.getElementById('qubitBar');
+  var qc = document.getElementById('qubitCount');
+  if (qb) qb.style.width = '25%';
+  if (qc) qc.textContent = '~1,000 / 4,000';
+  var dlp = document.getElementById('decryptLogPanel');
+  if (dlp) { dlp.style.display = 'none'; }
+  ['dlog0','dlog1','dlog2','dlog3'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.classList.remove('vis');
+  });
+  // S3.4: reset padlock to locked state
+  var lockSvg   = document.getElementById('lockIcon');
+  var lockLabel = document.getElementById('lockLabel');
+  if (lockSvg) {
+    lockSvg.classList.remove('lock-open');
+    var shackleArc = lockSvg.querySelector('.shackle-arc');
+    var bodyFill   = lockSvg.querySelector('.body-fill');
+    var keyholes   = lockSvg.querySelectorAll('.keyhole-fill');
+    if (shackleArc) shackleArc.style.cssText = '';
+    if (bodyFill)   bodyFill.style.cssText   = '';
+    keyholes.forEach(function(el) { el.style.cssText = ''; });
+  }
+  if (lockLabel) { lockLabel.textContent = 'ENCRYPTED'; lockLabel.classList.remove('exposed'); }
+  // Reset PREV/NEXT button states and update display
+  document.getElementById('btnPrev').disabled = true;
+  document.getElementById('btnNext').disabled = false;
+  updateStepper(STEP_PCT[1]);
+  updateNarrative(STEP_PCT[1]);
+}
+
+// INIT
+buildNetwork();
+// Initialise step 1 (era 1 active, PREV disabled)
+updateNarrative(STEP_PCT[1]);
+updateStepper(STEP_PCT[1]);
+document.querySelector('#era1 .era-progress').classList.add('progress-active');
+document.getElementById('btnPrev').disabled = true;
+// Keyboard: Left/Right arrow keys for PREV/NEXT
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextStep(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prevStep(); }
+});
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shor's Algorithm — PQC Demo Scene 02</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.03);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,153,215,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,153,215,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+}
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--quantum);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 35px;
+  letter-spacing: 4px;
+  color: #fff;
+}
+header h1 span { color: var(--quantum); }
+.sim-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.sim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--safe-glow);
+  flex-shrink: 0;
+  animation: sim-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(42,159,214,0.4); }
+  50%       { opacity: 0.6; box-shadow: 0 0 0 4px rgba(42,159,214,0); }
+}
+
+/* PHASE STEPPER */
+.phase-timeline {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.step-dot-pip {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.step-line {
+  width: 134px; height: 1px;
+  background: var(--border-mid);
+  margin-bottom: 14px;
+  transition: background 0.6s ease;
+}
+.step.s-blue.active .step-dot-pip  { background: var(--safe-glow); border-color: var(--safe-glow); box-shadow: 0 0 8px var(--safe-glow); }
+.step.s-blue.active .step-label    { color: var(--safe-glow); }
+.step.s-green.active .step-dot-pip { background: var(--quantum); border-color: var(--quantum); box-shadow: 0 0 8px var(--quantum); }
+.step.s-green.active .step-label   { color: var(--quantum); }
+.step.s-red.active .step-dot-pip   { background: var(--threat-glow); border-color: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+.step.s-red.active .step-label     { color: var(--threat-glow); }
+
+/* NARRATIVE BAR */
+.narrative-bar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  height: 105px;
+}
+.narr-cell {
+  flex: 1;
+  padding: 10px 18px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  transition: background 0.4s;
+  overflow: hidden;
+}
+.narr-cell:last-child { border-right: none; }
+.narr-cell.active         { background: rgba(42,159,214,0.09);  border-top: 2px solid rgba(42,159,214,0.55); }
+.narr-cell.active-threat  { background: rgba(255,85,0,0.10);   border-top: 2px solid rgba(255,85,0,0.55); }
+.narr-cell.active-quantum { background: rgba(0,232,122,0.08);  border-top: 2px solid rgba(0,232,122,0.55); }
+.narr-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.narr-label.blue  { color: var(--safe-glow); }
+.narr-label.red   { color: var(--threat-glow); }
+.narr-label.green { color: var(--quantum); }
+.narr-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(220,228,240,0.92);
+  font-weight: 400;
+}
+.narr-text strong { color: var(--text); font-weight: 600; }
+.narr-text em     { color: var(--safe-glow); font-style: normal; font-weight: 600; }
+.narr-text .danger { color: var(--threat-glow); font-weight: 600; }
+.narr-text .go    { color: var(--quantum); font-weight: 600; }
+
+/* PIPELINE WRAP */
+.pipeline-wrap {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  flex-shrink: 0;
+}
+
+/* PIPELINE */
+.pipeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pipe-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 9px 6px;
+  transition: all 0.4s ease;
+  min-width: 0;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+.pipe-stage::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  transition: background 0.4s ease;
+}
+.ps-num {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  transition: color 0.4s;
+}
+.ps-icon {
+  font-family: 'Inconsolata', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: color 0.4s;
+  letter-spacing: 1px;
+}
+.ps-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  transition: color 0.4s;
+  text-align: center;
+}
+.ps-sub {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: rgba(74,90,112,0.65);
+  text-align: center;
+  letter-spacing: 0.5px;
+  transition: color 0.4s;
+}
+
+/* Stage states */
+.pipe-stage.classical {
+  border-color: rgba(42,159,214,0.25);
+  background: rgba(42,159,214,0.06);
+}
+.pipe-stage.classical::before { background: var(--safe-glow); }
+.pipe-stage.classical .ps-icon,
+.pipe-stage.classical .ps-title { color: var(--safe-glow); }
+.pipe-stage.classical .ps-num,
+.pipe-stage.classical .ps-sub   { color: rgba(42,159,214,0.45); }
+
+.pipe-stage.classical-active {
+  border-color: rgba(42,159,214,0.55);
+  background: rgba(42,159,214,0.12);
+  box-shadow: 0 0 14px rgba(42,159,214,0.18), 0 4px 24px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+.pipe-stage.classical-active::before { background: var(--safe-glow); }
+.pipe-stage.classical-active .ps-icon,
+.pipe-stage.classical-active .ps-title { color: var(--safe-glow); }
+.pipe-stage.classical-active .ps-num,
+.pipe-stage.classical-active .ps-sub   { color: rgba(42,159,214,0.65); }
+
+.pipe-stage.quantum {
+  border-color: rgba(0,232,122,0.2);
+  background: rgba(0,232,122,0.05);
+}
+.pipe-stage.quantum::before { background: var(--quantum); }
+.pipe-stage.quantum .ps-icon,
+.pipe-stage.quantum .ps-title { color: var(--quantum); }
+.pipe-stage.quantum .ps-num,
+.pipe-stage.quantum .ps-sub   { color: rgba(0,232,122,0.4); }
+
+.pipe-stage.quantum-active {
+  border-color: rgba(0,232,122,0.55);
+  background: rgba(0,232,122,0.1);
+  box-shadow: 0 0 16px rgba(0,232,122,0.22), 0 4px 24px rgba(0,0,0,0.4);
+  transform: translateY(-3px);
+}
+.pipe-stage.quantum-active::before { background: var(--quantum); }
+.pipe-stage.quantum-active .ps-icon,
+.pipe-stage.quantum-active .ps-title { color: var(--quantum); }
+.pipe-stage.quantum-active .ps-num,
+.pipe-stage.quantum-active .ps-sub   { color: rgba(0,232,122,0.65); }
+
+.pipe-stage.threat-active {
+  border-color: rgba(255,85,0,0.65);
+  background: rgba(255,85,0,0.1);
+  box-shadow: 0 0 20px rgba(255,85,0,0.28), 0 4px 24px rgba(0,0,0,0.4);
+  transform: translateY(-3px);
+}
+.pipe-stage.threat-active::before { background: var(--threat-glow); }
+.pipe-stage.threat-active .ps-icon,
+.pipe-stage.threat-active .ps-title { color: var(--threat-glow); }
+.pipe-stage.threat-active .ps-num,
+.pipe-stage.threat-active .ps-sub   { color: rgba(255,85,0,0.55); }
+
+/* Pipeline arrows */
+.pipe-arrow {
+  font-size: 16px;
+  color: var(--text-dim);
+  padding: 0 5px;
+  flex-shrink: 0;
+  transition: color 0.4s, text-shadow 0.4s;
+  opacity: 0.4;
+}
+.pipe-arrow.lit-q { color: var(--quantum); opacity: 1; text-shadow: 0 0 8px rgba(0,232,122,0.5); }
+.pipe-arrow.lit-b { color: var(--safe-glow); opacity: 1; }
+.pipe-arrow.lit-r { color: var(--threat-glow); opacity: 1; text-shadow: 0 0 8px rgba(255,85,0,0.5); }
+
+/* DETAIL AREA */
+.detail-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  padding: 20px 32px 130px;
+}
+.detail-area::-webkit-scrollbar { display: none; }
+
+/* STEP SECTIONS */
+.step-section {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+.step-section.active { display: flex; }
+
+/* STEP HEADING */
+.step-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.step-heading-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: rgba(74,90,112,0.3);
+  line-height: 1;
+}
+.step-heading-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--text);
+}
+.step-heading-title.blue  { color: var(--safe-glow); }
+.step-heading-title.green { color: var(--quantum); }
+.step-heading-title.red   { color: var(--threat-glow); }
+.step-heading-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-top: -10px;
+  margin-bottom: 4px;
+}
+
+/* GRID LAYOUTS */
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; }
+
+/* INFO CARDS */
+.info-card {
+  background: rgba(255,255,255,0.02);
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  transition: all 0.4s ease;
+}
+.info-card.blue-card   { border: 1px solid rgba(42,159,214,0.25); }
+.info-card.red-card    { border: 1px solid rgba(255,85,0,0.25); }
+.info-card.green-card  { border: 1px solid rgba(0,232,122,0.25); }
+.info-card.amber-card  { border: 1px solid rgba(255,136,0,0.25); }
+.info-card.dim-card    { border: 1px solid rgba(255,255,255,0.06); }
+.info-card.threat-card {
+  border: 1px solid rgba(255,85,0,0.4);
+  background: rgba(255,85,0,0.05);
+}
+
+.card-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.card-label.blue  { color: var(--safe-glow); }
+.card-label.red   { color: var(--threat-glow); }
+.card-label.green { color: var(--quantum); }
+.card-label.amber { color: var(--amber); }
+
+.card-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 2px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.card-value.blue  { color: var(--safe-glow); }
+.card-value.red   { color: var(--threat-glow); }
+.card-value.green { color: var(--quantum); }
+
+.card-desc {
+  font-size: 13px;
+  color: rgba(220,228,240,0.88);
+  line-height: 1.55;
+}
+.card-desc strong { color: var(--text); }
+.card-desc .go    { color: var(--quantum); font-weight: 600; }
+.card-desc .danger { color: var(--threat-glow); font-weight: 600; }
+.card-desc .em    { color: var(--safe-glow); font-weight: 600; }
+
+/* COMPLEXITY ROW */
+.complexity-row { display: flex; gap: 12px; }
+.complexity-box {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  transition: all 0.4s ease;
+}
+.complexity-box.classical { border: 1px solid rgba(42,159,214,0.2); }
+.complexity-box.quantum   { border: 1px solid rgba(0,232,122,0.2); }
+.cx-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+.cx-formula {
+  font-family: 'Inconsolata', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.4;
+}
+.cx-formula.blue  { color: var(--safe-glow); }
+.cx-formula.green { color: var(--quantum); }
+.cx-desc { font-size: 12px; color: rgba(220,228,240,0.80); }
+
+/* WAVE VISUALIZATION */
+.wave-container {
+  background: rgba(5,8,18,0.85);
+  border: 1px solid rgba(0,232,122,0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 130px;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* FREQUENCY BARS */
+.freq-container {
+  background: rgba(5,8,18,0.85);
+  border: 1px solid rgba(0,232,122,0.15);
+  border-radius: 8px;
+  padding: 16px 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.freq-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 90px;
+}
+.freq-bar {
+  flex: 1;
+  background: rgba(0,232,122,0.12);
+  border-radius: 2px 2px 0 0;
+  transition: height 0.7s ease, background 0.4s;
+  height: 5px;
+  min-height: 3px;
+}
+.freq-bar.peak {
+  background: var(--quantum);
+  box-shadow: 0 0 5px rgba(0,232,122,0.5);
+}
+.freq-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* BLOCH SPHERE CONTAINER */
+.bloch-container {
+  background: rgba(5,8,18,0.85);
+  border: 1px solid rgba(0,232,122,0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* TERMINAL OUTPUT */
+.terminal {
+  background: rgba(3,5,10,0.97);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  line-height: 1.75;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.term-comment { color: rgba(74,90,112,0.7); display: block; }
+.term-label   { color: var(--text-dim); }
+.term-val     { color: var(--quantum); }
+.term-op      { color: rgba(192,207,224,0.45); }
+.term-result  { color: var(--threat-glow); font-weight: 700; font-size: 14px; display: block; margin-top: 4px; }
+.term-spacer  { display: block; height: 4px; }
+
+/* QUANTUM FORMULA BOX */
+.formula-box {
+  padding: 10px 14px;
+  background: rgba(0,232,122,0.05);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: 4px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  color: var(--quantum);
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+/* HOOK BAR */
+#hookBar {
+  position: fixed;
+  bottom: 44px;
+  left: 0; right: 0;
+  background: rgba(255,85,0,0.08);
+  border-top: 5px solid var(--threat-glow);
+  padding: 13px 32px 16px;
+  z-index: 150;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  pointer-events: none;
+}
+#hookBar.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#hookBar p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+#hookBar em { font-style: normal; color: var(--threat-glow); font-weight: 700; }
+
+/* CONTROLS */
+.controls {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  z-index: 200;
+  padding: 9px 36px;
+  position: relative;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 7px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  pointer-events: all;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+.ctrl-btn:disabled { opacity: 0.3; cursor: default; }
+.ctrl-btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.ctrl-btn.primary {
+  background: rgba(42,159,214,0.12);
+  border-color: rgba(42,159,214,0.4);
+  color: var(--safe-glow);
+}
+.ctrl-btn.primary:hover { background: rgba(42,159,214,0.22); }
+.ctrl-btn.primary:disabled { opacity: 0.3; }
+.ctrl-btn.scene-forward {
+  background: rgba(0,232,122,0.12);
+  border-color: rgba(0,232,122,0.45);
+  color: var(--quantum);
+  font-weight: 700;
+}
+.ctrl-btn.scene-forward:hover { background: rgba(0,232,122,0.22); }
+
+/* STEP DOTS — removed; stepper in stage area is the sole progress indicator */
+
+/* ANIMATIONS */
+@keyframes waveScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-120px); }
+}
+.wave-anim { animation: waveScroll 2.4s linear infinite; }
+
+@keyframes pulseGreen {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+.pulse { animation: pulseGreen 1.8s ease-in-out infinite; }
+
+/* FORMULA TRANSLATIONS */
+.formula-plain {
+  font-size: 12px;
+  color: rgba(184,191,204,0.65);
+  font-style: italic;
+  line-height: 1.55;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+/* GLOSSARY TERMS */
+.glossary-term {
+  border-bottom: 1px dashed rgba(0,232,122,0.45);
+  cursor: help;
+  transition: color 0.15s;
+}
+.glossary-term:hover { color: var(--quantum); }
+
+/* GLOSSARY TOOLTIP */
+#glossary-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: var(--bg3);
+  border: 1px solid rgba(0,232,122,0.3);
+  border-radius: 6px;
+  padding: 10px 14px;
+  max-width: 280px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-bright);
+}
+#glossary-tooltip.visible { opacity: 1; }
+#glossary-tooltip .tt-term {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--quantum);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* PIPELINE NOTE BADGE */
+.pipeline-note {
+  display: inline-block;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(0,232,122,0.55);
+  background: rgba(0,232,122,0.07);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* CTRL BRAND */
+.ctrl-brand {
+  position: absolute;
+  right: 36px;
+  bottom: 12px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+/* ── S2.3: FFT vs QFT Comparison Panel ─────────────────────────────── */
+.fft-compare-wrap {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel);
+  width: 100%;
+}
+
+.fft-compare-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fft-compare-col.fft-left {
+  border-right: 1px solid var(--border);
+}
+
+.fft-compare-header {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fft-compare-header.fft-classical {
+  color: var(--safe-glow);
+}
+
+.fft-compare-header.fft-quantum {
+  color: var(--quantum);
+}
+
+.fft-compare-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* Classical: serial chain */
+.fft-serial-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  color: var(--safe-glow);
+}
+
+.fft-serial-row .fft-step-box {
+  background: rgba(42,159,214,0.08);
+  border: 1px solid rgba(42,159,214,0.25);
+  border-radius: 3px;
+  padding: 5px 10px;
+  color: var(--safe-glow);
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+
+.fft-serial-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1;
+  padding: 0 4px;
+}
+
+/* Quantum: parallel block */
+.fft-parallel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  position: relative;
+}
+
+.fft-parallel-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+}
+
+.fft-parallel-row .fft-step-box-q {
+  background: rgba(0,232,122,0.07);
+  border: 1px solid rgba(0,232,122,0.25);
+  border-radius: 3px;
+  padding: 5px 10px;
+  color: var(--quantum);
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+
+.fft-superpos-brace {
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 2px;
+  color: var(--quantum);
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.fft-superpos-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--quantum);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  opacity: 0.75;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.fft-compare-footer {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.fft-compare-footer.fft-footer-classical {
+  color: rgba(42,159,214,0.65);
+}
+
+.fft-compare-footer.fft-footer-quantum {
+  color: rgba(0,232,122,0.65);
+}
+/* ─────────────────────────────────────────────────────────────────── */
+
+/* ── S2.4: SHATTERED LOCK (Step 5) ─────────────────────────────── */
+.shattered-lock-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0 4px;
+}
+
+.shattered-lock {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* persistent dim glow after animation settles */
+  filter: drop-shadow(0 0 6px rgba(255,34,25,0.45));
+}
+
+/* Fragment 1 — top-left body shard */
+.lock-frag-1 {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: center center;
+  animation: lock-frag-1-enter 1.0s cubic-bezier(0.22,1,0.36,1) both;
+  animation-play-state: paused;
+}
+/* Fragment 2 — top-right body shard */
+.lock-frag-2 {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: center center;
+  animation: lock-frag-2-enter 1.0s cubic-bezier(0.22,1,0.36,1) both;
+  animation-play-state: paused;
+}
+/* Fragment 3 — shackle (broken arch) */
+.lock-frag-3 {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: center center;
+  animation: lock-frag-3-enter 1.0s cubic-bezier(0.22,1,0.36,1) both;
+  animation-play-state: paused;
+}
+/* Fragment 4 — crack glow overlay */
+.lock-crack-glow {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  animation: lock-glow-pulse 1.0s cubic-bezier(0.22,1,0.36,1) both;
+  animation-play-state: paused;
+}
+
+/* Entrance: frag-1 flies slightly left+down from center */
+@keyframes lock-frag-1-enter {
+  0%   { transform: translate(-14px, 10px) rotate(-18deg); opacity: 0; filter: brightness(2) drop-shadow(0 0 14px #ff2219); }
+  30%  { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 10px #ff5500); }
+  100% { transform: translate(-4px, 3px) rotate(-5deg); opacity: 1; filter: brightness(1) drop-shadow(0 0 3px #ff2219); }
+}
+/* Entrance: frag-2 flies slightly right+down */
+@keyframes lock-frag-2-enter {
+  0%   { transform: translate(12px, 8px) rotate(15deg); opacity: 0; filter: brightness(2) drop-shadow(0 0 14px #ff2219); }
+  30%  { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 10px #ff5500); }
+  100% { transform: translate(4px, 2px) rotate(4deg); opacity: 1; filter: brightness(1) drop-shadow(0 0 3px #ff2219); }
+}
+/* Entrance: shackle arcs upward slightly, settling cracked open */
+@keyframes lock-frag-3-enter {
+  0%   { transform: translateY(-16px) rotate(-8deg); opacity: 0; filter: brightness(2) drop-shadow(0 0 14px #ff5500); }
+  30%  { opacity: 1; filter: brightness(1.8) drop-shadow(0 0 12px #ff5500); }
+  100% { transform: translateY(-3px) rotate(-2deg); opacity: 1; filter: brightness(1) drop-shadow(0 0 4px #ff5500); }
+}
+/* Entrance: brief full glow burst, settles to dim */
+@keyframes lock-glow-pulse {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  60%  { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
+
+/* Activated state — JS adds .animate class to trigger the one-shot */
+.shattered-lock.animate .lock-frag-1,
+.shattered-lock.animate .lock-frag-2,
+.shattered-lock.animate .lock-frag-3,
+.shattered-lock.animate .lock-crack-glow {
+  animation-play-state: running;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 02 / 06</div>
+    <h1>SHOR'S ALGORITHM &mdash; <span>STEP THROUGH</span></h1>
+  </div>
+  <div class="header-right">
+    <div class="sim-badge">
+      <span class="sim-dot"></span>
+      SIMULATION
+    </div>
+  </div>
+</header>
+
+<!-- PHASE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper">
+    <div class="step s-blue active" id="pStep0">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">INPUT</div>
+    </div>
+    <div class="step-line" id="pLine0"></div>
+    <div class="step s-blue" id="pStep1">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">SUPER</div>
+    </div>
+    <div class="step-line" id="pLine1"></div>
+    <div class="step s-green" id="pStep2">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">ORACLE</div>
+    </div>
+    <div class="step-line" id="pLine2"></div>
+    <div class="step s-red" id="pStep3">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">MEASURE</div>
+    </div>
+    <div class="step-line" id="pLine3"></div>
+    <div class="step s-red" id="pStep4">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">OUTPUT</div>
+    </div>
+    <div class="step-line" id="pLine4"></div>
+    <div class="step s-red" id="pStep5">
+      <div class="step-dot-pip"></div>
+      <div class="step-label">VERDICT</div>
+    </div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar">
+  <div class="narr-cell" id="nc-left">
+    <div class="narr-label" id="nl-left"></div>
+    <div class="narr-text"  id="nt-left"></div>
+  </div>
+  <div class="narr-cell" id="nc-mid">
+    <div class="narr-label" id="nl-mid"></div>
+    <div class="narr-text"  id="nt-mid"></div>
+  </div>
+  <div class="narr-cell" id="nc-right">
+    <div class="narr-label" id="nl-right"></div>
+    <div class="narr-text"  id="nt-right"></div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div class="pipeline-wrap">
+  <div class="pipeline">
+
+    <div class="pipe-stage" id="ps1">
+      <div class="ps-num">01</div>
+      <div class="ps-icon">N</div>
+      <div class="ps-title">INPUT</div>
+      <div class="ps-sub">RSA modulus</div>
+    </div>
+
+    <div class="pipe-arrow" id="pa1">&rarr;</div>
+
+    <div class="pipe-stage" id="ps2">
+      <div class="ps-num">02</div>
+      <div class="ps-icon">|&psi;&rang;</div>
+      <div class="ps-title">SUPERPOSITION</div>
+      <div class="ps-sub">All values at once</div>
+    </div>
+
+    <div class="pipe-arrow" id="pa2">&rarr;</div>
+
+    <div class="pipe-stage" id="ps3">
+      <div class="ps-num">03</div>
+      <div class="ps-icon">f(x)</div>
+      <div class="ps-title">ORACLE</div>
+      <div class="ps-sub">Mod exponentiation</div>
+    </div>
+
+    <div class="pipe-arrow" id="pa3">&rarr;</div>
+
+    <div class="pipe-stage" id="ps4">
+      <div class="ps-num">04</div>
+      <div class="ps-icon">QFT</div>
+      <div class="ps-title">FOURIER</div>
+      <div class="ps-sub">Find the period</div>
+    </div>
+
+    <div class="pipe-arrow" id="pa4">&rarr;</div>
+
+    <div class="pipe-stage" id="ps5">
+      <div class="ps-num">05</div>
+      <div class="ps-icon">&lang;m&rang;</div>
+      <div class="ps-title">MEASURE</div>
+      <div class="ps-sub">Collapse to integer</div>
+    </div>
+
+    <div class="pipe-arrow" id="pa5">&rarr;</div>
+
+    <div class="pipe-stage" id="ps6">
+      <div class="ps-num">06</div>
+      <div class="ps-icon">p&middot;q</div>
+      <div class="ps-title">FACTORS</div>
+      <div class="ps-sub">Private key exposed</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DETAIL AREA -->
+<div class="detail-area">
+
+  <!-- STEP 0: The Classical Wall -->
+  <div class="step-section active" id="detail-0">
+    <div class="step-heading">
+      <div class="step-heading-num">00</div>
+      <div class="step-heading-title blue">THE CLASSICAL WALL</div>
+    </div>
+    <div class="step-heading-sub">RSA security rests entirely on one hard problem. Classically, it holds. Quantum breaks it completely.</div>
+
+    <div class="grid-3">
+      <div class="info-card blue-card">
+        <div class="card-label blue">THE LOCK</div>
+        <div class="card-value blue">RSA-2048</div>
+        <div class="card-desc">
+          The RSA public key is a number <strong>N = p &times; q</strong>, where p and q are large primes. Knowing p and q instantly reveals the private key.
+          <br><br>
+          RSA-2048 uses N with <strong>617 decimal digits</strong>. Multiplying p &times; q is trivial. Working backwards to find them is &mdash; classically &mdash; impossible.
+        </div>
+      </div>
+
+      <div class="info-card dim-card">
+        <div class="card-label">CLASSICAL ATTACK</div>
+        <div class="card-value" style="color: var(--amber); font-size:18px; line-height:1.3; margin-bottom:4px;">O(exp(&#x221B;(64/9 &middot; ln N &middot; (ln ln N)&sup2;)))</div>
+        <div class="formula-plain">This means: the time to crack RSA grows faster than any polynomial &mdash; but Shor&rsquo;s algorithm slashes that to a manageable curve.</div>
+        <div class="card-desc" style="margin-top:8px;">
+          The best classical algorithm is the <strong>General Number Field Sieve</strong> (a highly optimized mathematical sieving method) &mdash; <span class="glossary-term" data-term="big-o">sub-exponential</span>, but still astronomical at 2048 bits.
+          <br><br>
+          Required operations: <span class="danger">~10<sup>60</sup></span>.<br>
+          At a trillion ops/sec: <span class="danger">~300 trillion years</span>.
+        </div>
+      </div>
+
+      <div class="info-card green-card">
+        <div class="card-label green">THE QUANTUM PATH</div>
+        <div class="card-value green">O((log N)&sup3;)</div>
+        <div class="formula-plain"><span class="glossary-term" data-term="big-o">Big-O notation</span>: time grows gently as the key gets longer &mdash; doubling the key only increases run time by 8&times;. Key size offers no refuge against Shor&rsquo;s.</div>
+        <div class="card-desc">
+          Shor's algorithm (Peter Shor, 1994) reduces factoring to <span class="go">polynomial time</span> on a quantum computer.
+          <br><br>
+          The insight: <strong>don't search for the factors.</strong> Instead, find the hidden mathematical <em>period</em> in the problem &mdash; it hands you the factors directly.
+        </div>
+      </div>
+    </div>
+
+    <div class="complexity-row">
+      <div class="complexity-box classical">
+        <div class="cx-label">CLASSICAL COMPLEXITY</div>
+        <div class="cx-formula blue">sub-exponential &mdash; grows faster than polynomial</div>
+        <div class="cx-desc">Sub-exponential = still grows extremely fast, but slower than pure exponential. Adding bits to the key makes it harder &mdash; but quantum eliminates the advantage entirely.</div>
+      </div>
+      <div class="complexity-box quantum">
+        <div class="cx-label">SHOR'S ALGORITHM COMPLEXITY</div>
+        <div class="cx-formula green">O((log N)&sup3;) &mdash; polynomial in key length</div>
+        <div class="cx-desc">Doubling the key length only increases quantum run time by a factor of 8. No key size is safe.</div>
+      </div>
+    </div>
+
+    <div class="info-card amber-card" style="background:rgba(255,136,0,0.04);">
+      <div class="card-label amber">FOLLOW THIS EXAMPLE THROUGH ALL 6 STEPS</div>
+      <div class="card-desc">
+        To make the math concrete, each step will trace a small working example: <strong>N = 3,233</strong> (the number to factor), <strong>a = 2</strong> (a randomly chosen starting number). The goal: find the hidden prime factors <strong>61 &times; 53</strong> using only quantum operations.
+        <br><br>
+        RSA-2048 uses numbers with 617 digits &mdash; this 4-digit example shows the same structure in a form you can verify by hand.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Superposition -->
+  <div class="step-section" id="detail-1">
+    <div class="step-heading">
+      <div class="step-heading-num">02</div>
+      <div class="step-heading-title green">SUPERPOSITION &mdash; ALL VALUES SIMULTANEOUSLY</div>
+    </div>
+    <div class="step-heading-sub">A quantum register is placed in superposition, holding every possible input value at the same time</div>
+
+    <div class="grid-2">
+      <div class="info-card green-card">
+        <div class="card-label green">QUANTUM REGISTER</div>
+        <div class="card-desc" style="font-size:14px; line-height:1.65;">
+          Each qubit is placed into superposition using <strong>Hadamard gates</strong>:
+        </div>
+        <div class="formula-box">|0&rang;  &rarr;  (|0&rang; + |1&rang;) / &radic;2</div>
+        <div class="formula-plain"><span class="glossary-term" data-term="braket">Quantum notation</span>: a <span class="glossary-term" data-term="qubit">qubit</span> starts at 0. After the <span class="glossary-term" data-term="hadamard">Hadamard gate</span> operation, it becomes equally likely to be 0 or 1 &mdash; but holds both possibilities until measured.</div>
+        <div class="card-desc" style="font-size:14px; line-height:1.65; margin-top:12px;">
+          With n qubits, the register holds <span class="go">2<sup>n</sup> states simultaneously</span>. For RSA-2048, Shor's needs roughly <strong>~4,096 logical qubits</strong> &mdash; representing 10<sup>1,233</sup> values at once.
+        </div>
+        <div class="formula-box" style="margin-top:10px;">|&psi;&rang; = (1/&radic;2<sup>n</sup>) &times; &Sigma;|x&rang;   for x = 0 &hellip; 2<sup>n</sup>&minus;1</div>
+        <div class="formula-plain">All 2<sup>n</sup> possible input values are held simultaneously, each with equal probability. For our example: the register holds every value from 0 to 2<sup>n</sup>&minus;1 at once &mdash; the oracle will process them all in a single operation.</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="bloch-container" style="height: 170px;">
+          <svg width="280" height="150" viewBox="0 0 280 150">
+            <defs>
+              <radialGradient id="blochBg" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="rgba(0,232,122,0.07)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="140" cy="75" rx="70" ry="70" fill="url(#blochBg)"/>
+            <circle cx="140" cy="75" r="60" fill="none" stroke="rgba(0,232,122,0.2)" stroke-width="1" stroke-dasharray="3,3"/>
+            <ellipse cx="140" cy="75" rx="60" ry="16" fill="none" stroke="rgba(0,232,122,0.14)" stroke-width="1" stroke-dasharray="2,3"/>
+            <line x1="140" y1="12" x2="140" y2="138" stroke="rgba(0,232,122,0.2)" stroke-width="1"/>
+            <line x1="78" y1="75" x2="202" y2="75" stroke="rgba(0,232,122,0.12)" stroke-width="1"/>
+            <text x="145" y="10"  font-family="Inconsolata" font-size="10" fill="rgba(0,232,122,0.6)">|0&#x27E9;</text>
+            <text x="145" y="148" font-family="Inconsolata" font-size="10" fill="rgba(0,232,122,0.6)">|1&#x27E9;</text>
+            <ellipse cx="140" cy="75" rx="42" ry="11" fill="none" stroke="rgba(0,232,122,0.25)" stroke-width="1" stroke-dasharray="2,2"/>
+            <line x1="140" y1="75" x2="172" y2="43" stroke="#00e87a" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="172" cy="43" r="4.5" fill="#00e87a" style="filter:drop-shadow(0 0 5px #00e87a)"/>
+            <line x1="172" y1="43" x2="172" y2="75" stroke="rgba(0,232,122,0.18)" stroke-width="1" stroke-dasharray="2,2"/>
+            <line x1="140" y1="75" x2="172" y2="75" stroke="rgba(0,232,122,0.18)" stroke-width="1" stroke-dasharray="2,2"/>
+            <text x="178" y="40" font-family="Inconsolata" font-size="9" fill="#00e87a">|&#x03C8;&#x27E9;</text>
+            <text x="140" y="102" text-anchor="middle" font-family="Rajdhani" font-size="10" fill="rgba(0,232,122,0.45)">superposition state</text>
+          </svg>
+        </div>
+
+        <div class="info-card dim-card">
+          <div class="card-label">NOT PARALLELISM</div>
+          <div class="card-desc">
+            A classical bit is <strong>0 or 1</strong> &mdash; checked one state at a time. A <span class="glossary-term" data-term="qubit">qubit</span> in <span class="glossary-term" data-term="superposition">superposition</span> is <span class="go">0 and 1 simultaneously</span> &mdash; a fundamentally different representation of information.
+            <br><br>
+            This isn't "checking many values at once." It's encoding all values into a single quantum state &mdash; and <strong>processing that state as a whole</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Oracle -->
+  <div class="step-section" id="detail-2">
+    <div class="step-heading">
+      <div class="step-heading-num">03</div>
+      <div class="step-heading-title green">ORACLE &mdash; THE PERIODIC FUNCTION</div>
+    </div>
+    <div class="step-heading-sub">f(x) = a<sup>x</sup> mod N is applied to the entire superposition simultaneously &mdash; revealing a hidden period</div>
+
+    <div class="grid-2">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="wave-container">
+          <svg width="100%" height="130" viewBox="0 0 600 130" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="wg" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%"   stop-color="rgba(0,232,122,0)"/>
+                <stop offset="10%"  stop-color="rgba(0,232,122,0.85)"/>
+                <stop offset="90%"  stop-color="rgba(0,232,122,0.85)"/>
+                <stop offset="100%" stop-color="rgba(0,232,122,0)"/>
+              </linearGradient>
+              <clipPath id="waveClip"><rect x="0" y="0" width="600" height="130"/></clipPath>
+            </defs>
+            <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="120" y1="15" x2="120" y2="120" stroke="rgba(0,232,122,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="240" y1="15" x2="240" y2="120" stroke="rgba(0,232,122,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="360" y1="15" x2="360" y2="120" stroke="rgba(0,232,122,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="480" y1="15" x2="480" y2="120" stroke="rgba(0,232,122,0.12)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="60"  y="13" text-anchor="middle" font-family="Inconsolata" font-size="8" fill="rgba(0,232,122,0.45)">&larr;r&rarr;</text>
+            <text x="180" y="13" text-anchor="middle" font-family="Inconsolata" font-size="8" fill="rgba(0,232,122,0.45)">&larr;r&rarr;</text>
+            <text x="300" y="13" text-anchor="middle" font-family="Inconsolata" font-size="8" fill="rgba(0,232,122,0.45)">&larr;r&rarr;</text>
+            <text x="420" y="13" text-anchor="middle" font-family="Inconsolata" font-size="8" fill="rgba(0,232,122,0.45)">&larr;r&rarr;</text>
+            <g clip-path="url(#waveClip)">
+              <g class="wave-anim">
+                <path d="M-120,90 Q-90,35 -60,90 Q-30,145 0,90 Q30,35 60,90 Q90,145 120,90 Q150,35 180,90 Q210,145 240,90 Q270,35 300,90 Q330,145 360,90 Q390,35 420,90 Q450,145 480,90 Q510,35 540,90 Q570,145 600,90 Q630,35 660,90 Q690,145 720,90"
+                  fill="none" stroke="url(#wg)" stroke-width="2.2"/>
+              </g>
+            </g>
+            <text x="8" y="55" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(74,90,112,0.5)" transform="rotate(-90, 8, 55)">f(x)</text>
+            <text x="22" y="110" font-family="Inconsolata" font-size="10" fill="rgba(0,232,122,0.55)">f(x) = a^x mod N</text>
+            <text x="584" y="110" text-anchor="end" font-family="Inconsolata" font-size="10" fill="rgba(74,90,112,0.5)">input values (x) &#x2192;</text>
+          </svg>
+        </div>
+
+        <div class="info-card green-card">
+          <div class="card-label green">THE PERIOD r</div>
+          <div class="card-desc">
+            The function f(x) repeats with a hidden period r: <span class="go">f(x + r) = f(x)</span> for all x.
+            <br><br>
+            Once r is known, classical Euclidean GCDs yield the factors immediately:<br>
+            <span class="go">gcd(a<sup>r/2</sup> + 1, N) = p &nbsp;&nbsp; gcd(a<sup>r/2</sup> &minus; 1, N) = q</span>
+            <br><br>
+            <span class="formula-plain" style="display:block; margin-top:4px;">GCD = Greatest Common Divisor &mdash; a classical algorithm thousands of years old (Euclid&rsquo;s) that runs in milliseconds and extracts the prime factors once r is known. For our example: r&nbsp;=&nbsp;6 gives p&nbsp;=&nbsp;61, q&nbsp;=&nbsp;53.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="info-card dim-card">
+          <div class="card-label">QUANTUM PARALLELISM</div>
+          <div class="card-desc" style="font-size:14px; line-height:1.65;">
+            The <span class="glossary-term" data-term="oracle">quantum oracle</span> is a black-box quantum subroutine that processes all inputs at once &mdash; not sequentially. It computes f(x) for <strong>every value of x simultaneously</strong> because the input register is in superposition.
+            <br><br>
+            One quantum gate operation maps the entire superposition to its outputs. Input and output registers become <span class="glossary-term" data-term="entanglement"><strong>entangled</strong></span>.
+          </div>
+        </div>
+
+        <div class="info-card dim-card">
+          <div class="card-label">ENTANGLEMENT</div>
+          <div class="card-desc">
+            <span class="glossary-term" data-term="entanglement">Entanglement</span> means the input and output registers are now mathematically linked &mdash; knowing something about one instantly tells you something about the other.
+            <br><br>
+            After the oracle, the quantum state encodes the full relationship between every x and its f(x) simultaneously. The periodic structure is now <strong>encoded in the entangled quantum state</strong>.
+            <br><br>
+            Classically: computing f(x) for all 10<sup>1,233</sup> inputs would take longer than the age of the universe. Quantum: <span class="go">one operation</span>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: QFT -->
+  <div class="step-section" id="detail-3">
+    <div class="step-heading">
+      <div class="step-heading-num">04&ndash;05</div>
+      <div class="step-heading-title green">QUANTUM FOURIER TRANSFORM &mdash; EXPOSING r</div>
+    </div>
+    <div class="step-heading-sub">The QFT converts the periodic quantum state into frequency domain &mdash; measurement then reveals r <span class="pipeline-note">COVERS PIPELINE STAGES 04 + 05</span></div>
+
+    <div class="grid-2">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="freq-container">
+          <div class="card-label green" style="margin-bottom:2px;">FREQUENCY SPECTRUM AFTER QFT</div>
+          <div class="freq-bars" id="freqBars"></div>
+          <div class="freq-label" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>y: probability of outcome &uarr;</span>
+            <span>each bar = a possible period &mdash; peaks appear at multiples of 1/r</span>
+            <span>x: frequency &rarr;</span>
+          </div>
+        </div>
+
+        <div class="info-card green-card">
+          <div class="card-label green">CONSTRUCTIVE INTERFERENCE</div>
+          <div class="card-desc">
+            <span class="glossary-term" data-term="amplitudes">Probability amplitudes</span> &mdash; quantum values whose squares give the likelihood of each outcome &mdash; <strong>cancel everywhere</strong> except at multiples of 1/r, where they <span class="go">add up constructively</span>.
+            <br><br>
+            Measuring the register returns an integer m at a frequency peak. Classical <span class="glossary-term" data-term="continued-fraction">continued fraction expansion</span> then recovers r exactly &mdash; like GPS triangulation: an imprecise measurement worked backwards to a precise answer, in milliseconds.
+            <br><br>
+            <span class="formula-plain" style="display:block;">For our example: measurement returns m = 21,845. Continued fraction expansion works backwards to find r = 6.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="info-card dim-card">
+          <div class="card-label">WHAT IS THE QFT?</div>
+          <div class="card-desc" style="font-size:14px; line-height:1.65;">
+            Just as a prism splits white light into its color spectrum, the <span class="glossary-term" data-term="qft">Quantum Fourier Transform</span> splits the quantum state into its frequency components &mdash; revealing the hidden period r as a sharp peak in the spectrum.
+            <br><br>
+            Classical FFT: O(n log n) on n samples.<br>
+            QFT: O(n&sup2;) quantum gates &mdash; which seems slower, but the QFT operates on an exponentially large quantum state that would require 2<sup>n</sup> classical operations just to describe. The comparison is not apples to apples.
+          </div>
+        </div>
+
+        <div class="info-card dim-card">
+          <div class="card-label">WHY THIS WORKS</div>
+          <div class="card-desc">
+            The periodic structure of f(x) = a<sup>x</sup> mod N is invisible in the time domain &mdash; but in the <strong>frequency domain, the period r becomes a sharp, measurable peak</strong>.
+            <br><br>
+            This is what Shor recognized in 1994: the problem of factoring can be reduced to the problem of finding a period &mdash; and quantum computers are uniquely equipped to do that.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S2.3: Classical FFT vs QFT side-by-side -->
+    <div class="fft-compare-wrap">
+
+      <!-- LEFT: Classical FFT — serial -->
+      <div class="fft-compare-col fft-left">
+        <div class="fft-compare-header fft-classical">CLASSICAL FFT</div>
+        <div class="fft-compare-steps">
+          <div class="fft-serial-row">
+            <div class="fft-step-box">&#9654;&nbsp; Process f(0)</div>
+          </div>
+          <div class="fft-serial-arrow">&#8595;</div>
+          <div class="fft-serial-row">
+            <div class="fft-step-box">&#9654;&nbsp; Process f(1)</div>
+          </div>
+          <div class="fft-serial-arrow">&#8595;</div>
+          <div class="fft-serial-row">
+            <div class="fft-step-box">&#9654;&nbsp; Process f(2)</div>
+          </div>
+          <div class="fft-serial-arrow">&#8595;</div>
+          <div class="fft-serial-row">
+            <div class="fft-step-box">&#9654;&nbsp; Process f(3)</div>
+          </div>
+          <div class="fft-serial-arrow">&#8595;</div>
+          <div class="fft-serial-row">
+            <div class="fft-step-box">&#9654;&nbsp; Combine results</div>
+          </div>
+        </div>
+        <div class="fft-compare-footer fft-footer-classical">O(n&thinsp;log&thinsp;n)&nbsp;&mdash;&nbsp;serial steps</div>
+      </div>
+
+      <!-- RIGHT: Quantum QFT — parallel -->
+      <div class="fft-compare-col fft-right">
+        <div class="fft-compare-header fft-quantum">QUANTUM QFT</div>
+        <div class="fft-compare-steps">
+          <div style="display:flex; gap:6px; align-items:stretch;">
+            <div class="fft-parallel-block">
+              <div class="fft-parallel-row">
+                <div class="fft-step-box-q">f(0)</div>
+              </div>
+              <div class="fft-parallel-row">
+                <div class="fft-step-box-q">f(1)</div>
+              </div>
+              <div class="fft-parallel-row">
+                <div class="fft-step-box-q">f(2)</div>
+              </div>
+              <div class="fft-parallel-row">
+                <div class="fft-step-box-q">f(3)</div>
+              </div>
+              <div class="fft-parallel-row">
+                <div class="fft-step-box-q">&#183;&#183;&#183;&nbsp;f(N&minus;1)</div>
+              </div>
+            </div>
+            <div class="fft-superpos-brace">&#10217;</div>
+            <div class="fft-superpos-label">all states at once</div>
+          </div>
+        </div>
+        <div class="fft-compare-footer fft-footer-quantum">O(log&thinsp;n)&nbsp;&mdash;&nbsp;quantum steps</div>
+      </div>
+
+    </div><!-- /fft-compare-wrap -->
+
+  </div>
+
+  <!-- STEP 4: Collapse & Consequence -->
+  <div class="step-section" id="detail-4">
+    <div class="step-heading">
+      <div class="step-heading-num">06</div>
+      <div class="step-heading-title red">MEASURE &rarr; FACTORS &rarr; KEY EXPOSED</div>
+    </div>
+    <div class="step-heading-sub">Measurement collapses the state to a peak. Classical GCDs extract p and q. The private key follows immediately.</div>
+
+    <!-- S2.4: Shattered lock — plays once on step entrance -->
+    <div class="shattered-lock-wrap">
+      <div class="shattered-lock" id="shatteredLock" aria-hidden="true">
+        <!--
+          Three SVG fragments composited via absolute positioning.
+          Fragment 1: left body half + keyhole left
+          Fragment 2: right body half + keyhole right
+          Fragment 3: broken shackle arch
+          Crack glow: red radial bloom overlay
+        -->
+
+        <!-- FRAGMENT 1: left body shard -->
+        <svg class="lock-frag-1" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Left half of lock body, cut by a jagged crack down the center -->
+          <path d="M20 42 L20 66 L40 66 L41 64 L38 58 L40 54 L38 48 L41 42 Z"
+                fill="#1a0505" stroke="#ff2219" stroke-width="1.5"/>
+          <!-- Keyhole left half -->
+          <circle cx="37" cy="53" r="5" fill="none" stroke="#ff5500" stroke-width="1.2" stroke-dasharray="10 20"/>
+          <path d="M35 56 L35 62 L39 62" fill="none" stroke="#ff5500" stroke-width="1.2"/>
+          <!-- crack highlight line -->
+          <path d="M40 42 L38 50 L41 55 L38 60 L40 66" stroke="#ff8800" stroke-width="1" opacity="0.7"/>
+        </svg>
+
+        <!-- FRAGMENT 2: right body shard -->
+        <svg class="lock-frag-2" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Right half of lock body -->
+          <path d="M41 42 L38 48 L40 54 L38 58 L41 64 L40 66 L60 66 L60 42 Z"
+                fill="#1a0505" stroke="#ff2219" stroke-width="1.5"/>
+          <!-- Keyhole right half -->
+          <circle cx="43" cy="53" r="5" fill="none" stroke="#ff5500" stroke-width="1.2" stroke-dasharray="10 20"/>
+          <path d="M41 56 L41 62 L45 62" fill="none" stroke="#ff5500" stroke-width="1.2"/>
+        </svg>
+
+        <!-- FRAGMENT 3: broken shackle — arch with gap at bottom-right where it pulled free -->
+        <svg class="lock-frag-3" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Left shackle leg (intact) -->
+          <path d="M28 44 L28 30 Q28 14 40 14 Q52 14 52 30 L52 38"
+                fill="none" stroke="#cc1a0f" stroke-width="4" stroke-linecap="round"/>
+          <!-- Right shackle leg broken short — ends abruptly with a jagged tip -->
+          <path d="M52 38 L52 34" stroke="#ff2219" stroke-width="4" stroke-linecap="butt"/>
+          <path d="M50 34 L54 32 L52 36 L56 34" stroke="#ff5500" stroke-width="1.5" fill="none"/>
+          <!-- Left leg entry into body -->
+          <path d="M28 44 L28 42" stroke="#cc1a0f" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+
+        <!-- CRACK GLOW OVERLAY -->
+        <svg class="lock-crack-glow" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="crackBloom" cx="50%" cy="65%" r="50%">
+              <stop offset="0%"   stop-color="#ff5500" stop-opacity="0.7"/>
+              <stop offset="50%"  stop-color="#ff2219" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#ff2219" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="40" cy="54" rx="22" ry="16" fill="url(#crackBloom)"/>
+          <!-- vertical crack line emanating through body -->
+          <path d="M40 42 L38 50 L41 55 L38 61 L40 66" stroke="#ff8800" stroke-width="1.5" opacity="0.9"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="terminal">
+          <span class="term-comment">// Step 5: Measure &mdash; wave collapses to a peak frequency</span>
+          <span class="term-comment">// (Example: small N = 3,233 = 61 &times; 53, a = 2)</span>
+          <span class="term-spacer"></span>
+          <span><span class="term-label">MEASURE  </span><span class="term-val">m = 21,845</span>  <span class="term-comment">// integer at frequency peak</span></span>
+          <span class="term-spacer"></span>
+          <span class="term-comment">// continued fraction algorithm recovers period r from measurement m</span>
+          <span><span class="term-label">CONT-FRAC</span><span class="term-val">r = 6</span>  <span class="term-comment">// m=21,845 &rarr; continued fraction &rarr; r=6</span></span>
+          <span class="term-spacer"></span>
+          <span class="term-comment">// Classical GCD gives the prime factors</span>
+          <span><span class="term-label">GCD(+)   </span><span class="term-op">gcd(2&sup3; + 1, 3233)  </span><span class="term-val">= 61 = p</span></span>
+          <span><span class="term-label">GCD(&minus;)   </span><span class="term-op">gcd(2&sup3; &minus; 1, 3233)  </span><span class="term-val">= 53 = q</span></span>
+          <span class="term-spacer"></span>
+          <span class="term-comment">// Verify</span>
+          <span><span class="term-label">VERIFY   </span><span class="term-val">61 &times; 53 = 3,233 = N  &#10003;</span></span>
+          <span class="term-spacer"></span>
+          <span class="term-result">&#9888;  RSA PRIVATE KEY: DERIVED</span>
+          <span class="term-comment">// "derived" = attacker can now decrypt all past &amp; future traffic encrypted with this key</span>
+        </div>
+
+        <div class="info-card dim-card">
+          <div class="card-label">COMPLEXITY RECAP</div>
+          <div class="card-desc">
+            The algorithm is probabilistic &mdash; it may require a handful of repetitions to get a usable measurement (the math says at most O(log log N) &mdash; a very small number even for huge N). Even so, the total run time remains <span class="go">O((log N)&sup3;)</span> &mdash; polynomial.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="info-card threat-card">
+          <div class="card-label red">THE GAP</div>
+          <div class="card-value red" style="font-size:20px; line-height:1.25; margin-bottom:10px;">300 TRILLION YEARS<br>&rarr; HOURS TO DAYS</div>
+          <div class="card-desc">
+            RSA-2048 classically: <strong>~300 trillion years</strong> on the fastest supercomputer.
+            <br><br>
+            RSA-2048 on a <span class="glossary-term" data-term="crqc">CRQC</span> (Cryptographically Relevant Quantum Computer &mdash; a machine large enough and stable enough to run Shor&rsquo;s at scale): <span class="danger">hours to days</span>. Same lock. Same key. An entirely different class of attacker.
+            <br><br>
+            No key size offers refuge &mdash; 4096-bit, 8192-bit, any size. <span class="danger">Shor's attacks the structure, not the length.</span>
+          </div>
+        </div>
+
+        <div class="info-card red-card">
+          <div class="card-label red">WHAT'S VULNERABLE</div>
+          <div class="card-desc">
+            Every system using <strong>RSA or ECC</strong> for key exchange or digital signatures:
+            <br><br>
+            TLS / HTTPS &middot; VPN tunnels &middot; SSH &middot; Email (PGP, S/MIME) &middot; Code signing &middot; Certificate authorities &middot; Blockchain wallets (ECDSA)
+            <br><br>
+            <span class="danger">All of these fail simultaneously</span> when a CRQC exists. Next: what the new lock looks like.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: The Verdict -->
+  <div class="step-section" id="detail-5">
+    <div class="step-heading">
+      <div class="step-heading-num">05</div>
+      <div class="step-heading-title red">THE VERDICT &mdash; RSA IS BROKEN</div>
+    </div>
+    <div class="step-heading-sub">Shor&rsquo;s algorithm converts a 300-trillion-year problem into hours. Every system running RSA or ECC is on borrowed time.</div>
+
+    <div class="grid-3">
+      <div class="info-card threat-card">
+        <div class="card-label red">ATTACK CONFIRMED</div>
+        <div class="card-value red" style="font-size:22px; line-height:1.2; margin-bottom:8px;">N = 61 &times; 53<br>RSA-2048: BROKEN</div>
+        <div class="card-desc">
+          Our working example: <strong>N = 3,233 = 61 &times; 53</strong>. Verified. The same sequence of quantum operations applied to RSA-2048 completes in <span class="danger">hours to days</span> on a CRQC.
+          <br><br>
+          The private key is derived. Every certificate, session, and encrypted file using that key is now readable &mdash; retroactively. The lock didn&rsquo;t change. The attacker did.
+        </div>
+      </div>
+
+      <div class="info-card red-card">
+        <div class="card-label red">HARVEST NOW / DECRYPT LATER</div>
+        <div class="card-desc" style="font-size:14px; line-height:1.65;">
+          Adversaries don&rsquo;t need a CRQC today. They are <strong>capturing and storing encrypted traffic right now</strong> &mdash; banking on decrypting it when the machine eventually exists.
+          <br><br>
+          Classified communications, healthcare records, financial transactions, legal documents intercepted in <strong>2020, 2022, 2024</strong> will all be readable once a CRQC is operational. The data is already in transit to that future.
+          <br><br>
+          <span class="danger">The threat is retroactive.</span> Any data that needs to remain secret beyond the CRQC horizon is already compromised.
+        </div>
+      </div>
+
+      <div class="info-card dim-card">
+        <div class="card-label red">WHAT BREAKS</div>
+        <div class="card-desc">
+          Every system using <strong>RSA or ECC</strong> for key exchange or signatures is vulnerable:
+          <br><br>
+          <span class="danger">&rsaquo;</span> TLS / HTTPS &mdash; all web traffic<br>
+          <span class="danger">&rsaquo;</span> VPN tunnels<br>
+          <span class="danger">&rsaquo;</span> SSH remote access<br>
+          <span class="danger">&rsaquo;</span> Email (PGP, S/MIME)<br>
+          <span class="danger">&rsaquo;</span> Code signing &amp; software updates<br>
+          <span class="danger">&rsaquo;</span> Certificate authorities (PKI)<br>
+          <span class="danger">&rsaquo;</span> Blockchain wallets (ECDSA)<br>
+          <br>
+          <span class="danger">All of these fail simultaneously</span> when a CRQC exists.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card green-card" style="background:rgba(0,232,122,0.04);">
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:280px;">
+          <div class="card-label green">THE NEW LOCK EXISTS</div>
+          <div class="card-value green" style="font-size:22px; line-height:1.2; margin-bottom:8px;">ML-KEM &nbsp;&middot;&nbsp; ML-DSA</div>
+          <div class="card-desc">
+            NIST finalized post-quantum standards in 2024. <span class="go">CRYSTALS-Kyber (ML-KEM)</span> and <span class="go">CRYSTALS-Dilithium (ML-DSA)</span> are built on lattice mathematics &mdash; problems for which no quantum shortcut exists.
+          </div>
+        </div>
+        <div style="flex:1; min-width:280px;">
+          <div class="card-label green">WHAT COMES NEXT</div>
+          <div class="card-desc">
+            The next three scenes show you the new lock &mdash; how lattice-based cryptography works, how it benchmarks against classical alternatives, and what it protects against a world with a CRQC.
+            <br><br>
+            <span class="go">The quantum threat is real. The defense is ready.</span> The question is whether we migrate before the machine arrives.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /detail-area -->
+
+<!-- HOOK BAR -->
+<div id="hookBar">
+  <p id="hookMsg4" style="display:none;">
+    <em>The quantum computer doesn&rsquo;t try every answer &mdash; it asks a better question.</em>
+    &nbsp; Classical: brute-force 10<sup>60</sup> combinations. Quantum: find the hidden period that hands you the key directly.
+  </p>
+  <p id="hookMsg5" style="display:none;">
+    <em>Harvest now, decrypt later.</em>
+    &nbsp; Encrypted traffic captured today will be readable when a CRQC exists. The transition to post-quantum cryptography is not optional &mdash; it&rsquo;s already overdue.
+  </p>
+</div>
+
+<!-- GLOSSARY TOOLTIP -->
+<div id="glossary-tooltip">
+  <div class="tt-term"></div>
+  <div class="tt-def"></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevStep()" disabled>&#9664; PREV</button>
+  <button class="ctrl-btn primary" id="btnNext" onclick="nextStep()">NEXT &#9654;</button>
+  <button class="ctrl-btn" onclick="resetScene()" style="margin-left:8px;">&#x27F3; RESET</button>
+  <div class="ctrl-brand">PQC INTERACTIVE DEMO &middot; CNXN</div>
+</div>
+
+<script>
+// STATE
+let currentStep = 0;
+const TOTAL_STEPS = 6;
+
+// PIPELINE STATES PER STEP
+const pipelineStates = [
+  // Step 0 - Classical challenge (stage 1 is the input - classical context)
+  { ps1:'classical-active', ps2:'', ps3:'', ps4:'', ps5:'', ps6:'',
+    pa1:'lit-b', pa2:'', pa3:'', pa4:'', pa5:'' },
+  // Step 1 - Superposition
+  { ps1:'classical', ps2:'quantum-active', ps3:'', ps4:'', ps5:'', ps6:'',
+    pa1:'lit-q', pa2:'', pa3:'', pa4:'', pa5:'' },
+  // Step 2 - Oracle
+  { ps1:'classical', ps2:'quantum', ps3:'quantum-active', ps4:'', ps5:'', ps6:'',
+    pa1:'lit-q', pa2:'lit-q', pa3:'', pa4:'', pa5:'' },
+  // Step 3 - QFT + Measure
+  { ps1:'classical', ps2:'quantum', ps3:'quantum', ps4:'quantum-active', ps5:'quantum', ps6:'',
+    pa1:'lit-q', pa2:'lit-q', pa3:'lit-q', pa4:'lit-q', pa5:'' },
+  // Step 4 - Factors (threat)
+  { ps1:'classical', ps2:'quantum', ps3:'quantum', ps4:'quantum', ps5:'quantum', ps6:'threat-active',
+    pa1:'lit-q', pa2:'lit-q', pa3:'lit-q', pa4:'lit-q', pa5:'lit-r' },
+  // Step 5 - Verdict
+  { ps1:'classical', ps2:'quantum', ps3:'quantum', ps4:'quantum', ps5:'quantum', ps6:'threat-active',
+    pa1:'lit-q', pa2:'lit-q', pa3:'lit-q', pa4:'lit-q', pa5:'lit-r' },
+];
+
+// STEP DEFINITIONS
+const steps = [
+  // STEP 0
+  {
+    hookBar: false,
+    narrative: {
+      left:  { label: 'THE CLASSICAL WALL',   cls: 'blue',  text: 'RSA security relies on one fact: <strong>multiplying two primes is trivial, reversing the result is not.</strong> No classical algorithm can factor 2048-bit keys in meaningful time.' },
+      mid:   { label: 'BY THE NUMBERS',        cls: '',      text: 'RSA-2048 requires ~10<sup>60</sup> classical operations to crack \u2014 roughly <strong>300 trillion years</strong> on the fastest supercomputer alive today.' },
+      right: { label: 'A DIFFERENT PATH',      cls: 'green', text: 'Shor\u2019s algorithm doesn\u2019t search for factors. It finds the <span class="go">hidden periodic structure</span> in the problem \u2014 reducing it to O((log N)\u00b3) time.' },
+    }
+  },
+  // STEP 1
+  {
+    hookBar: false,
+    narrative: {
+      left:  { label: 'STAGE 02: SUPERPOSITION', cls: 'green', text: '~4,096 logical qubits are placed in superposition using Hadamard gates: each qubit becomes <span class="go">0 and 1 simultaneously</span>, encoding all possible inputs at once.' },
+      mid:   { label: 'ALL INPUTS AT ONCE',       cls: '',      text: 'n qubits hold <strong>2\u207f states simultaneously</strong>. For RSA-2048, the register holds 10\u00b9\u00b2\u00b3\u00b3 values \u2014 more than atoms in the observable universe.' },
+      right: { label: 'CLASSICAL COMPARISON',     cls: '',      text: 'A classical computer checks one input at a time. Even at a trillion checks per second, exhausting all inputs would take 10<sup>500</sup> years. <strong>Superposition sidesteps the search.</strong>' },
+    }
+  },
+  // STEP 2
+  {
+    hookBar: false,
+    narrative: {
+      left:  { label: 'STAGE 03: ORACLE',      cls: 'green', text: 'The quantum oracle computes <em>f(x) = a\u02e3 mod N</em> across the entire superposition in a single gate operation. Input and output registers become entangled.' },
+      mid:   { label: 'THE HIDDEN PERIOD',     cls: '',      text: 'f(x) repeats with a hidden period r: <strong>f(x + r) = f(x)</strong>. That period is the key to factoring N \u2014 encoded now in the entangled quantum state.' },
+      right: { label: 'QUANTUM PARALLELISM',   cls: 'green', text: '<span class="go">One operation. Every input. Simultaneously.</span> Classically, evaluating f(x) at 10\u00b9\u00b2\u00b3\u00b3 points would take longer than the universe has existed.' },
+    }
+  },
+  // STEP 3
+  {
+    hookBar: false,
+    narrative: {
+      left:  { label: 'STAGE 04: QFT',         cls: 'green', text: 'The Quantum Fourier Transform converts the periodic quantum state into the frequency domain \u2014 amplifying the signal exactly at multiples of 1/r.' },
+      mid:   { label: 'INTERFERENCE',          cls: '',      text: 'Amplitudes <strong>cancel at non-periodic values</strong> and add constructively at 1/r multiples. The period r is amplified into a sharp, measurable peak.' },
+      right: { label: 'STAGE 05: MEASURE',     cls: 'green', text: 'Measuring returns an integer m at a frequency peak. Classical <strong>continued fraction expansion</strong> recovers r from m precisely \u2014 then p and q follow from two GCD calculations.' },
+    }
+  },
+  // STEP 4
+  {
+    hookBar: true,
+    narrative: {
+      left:  { label: 'STAGE 06: KEY EXPOSED', cls: 'red',  text: 'With r known, <span class="danger">gcd(a\u02b3\u141f\u00b2 \u00b1 1, N)</span> yields p and q directly. The RSA private key is computable in microseconds of classical post-processing.' },
+      mid:   { label: 'THE GAP',               cls: 'red',  text: 'RSA-2048 classically: <strong>~300 trillion years.</strong> On a CRQC: <span class="danger">hours to days.</span> Same lock, same key \u2014 completely different attacker.' },
+      right: { label: 'NO ESCAPE',             cls: 'red',  text: 'Larger keys <span class="danger">do not help.</span> Shor\u2019s breaks the mathematical structure \u2014 not the key length. <strong>RSA and ECC are fundamentally broken at any size.</strong>' },
+    }
+  },
+  // STEP 5
+  {
+    hookBar: true,
+    narrative: {
+      left:  { label: 'THE VERDICT',            cls: 'red',   text: 'Shor\u2019s algorithm closes the classical era. RSA and ECC \u2014 the foundation of modern encryption \u2014 are <span class="danger">broken at any key size</span> on a Cryptographically Relevant Quantum Computer.' },
+      mid:   { label: 'RETROACTIVE RISK',       cls: 'red',   text: 'Encrypted traffic captured today can be decrypted when a CRQC exists. Governments, intelligence agencies, and organized crime <strong>are storing it now</strong>.' },
+      right: { label: 'THE NEW LOCK',           cls: 'green', text: 'NIST\u2019s post-quantum standards \u2014 <span class="go">ML-KEM</span> and <span class="go">ML-DSA</span> \u2014 are ready. Built on lattice problems no quantum algorithm can shortcut. Next scene: what that means.' },
+    }
+  },
+];
+
+// BUILD STEP DOTS — removed (stepper handles progress indication)
+
+// BUILD FREQUENCY BARS
+function buildFreqBars() {
+  const container = document.getElementById('freqBars');
+  if (!container) return;
+  container.innerHTML = '';
+  const total = 28;
+  const peaks = [4, 8, 12, 16, 20, 24];
+  for (let i = 0; i < total; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'freq-bar' + (peaks.includes(i) ? ' peak' : '');
+    bar.id = 'fbar' + i;
+    bar.style.height = '4px';
+    container.appendChild(bar);
+  }
+}
+
+// ANIMATE FREQUENCY BARS
+function animateFreqBars() {
+  const total = 28;
+  const peaks = [4, 8, 12, 16, 20, 24];
+  for (let i = 0; i < total; i++) {
+    const bar = document.getElementById('fbar' + i);
+    if (!bar) continue;
+    const isPeak = peaks.includes(i);
+    setTimeout(function(b, p) {
+      return function() {
+        b.style.height = p
+          ? (70 + Math.random() * 18) + 'px'
+          : (Math.floor(Math.random() * 14) + 3) + 'px';
+      };
+    }(bar, isPeak), i * 35);
+  }
+}
+
+function resetFreqBars() {
+  for (let i = 0; i < 28; i++) {
+    const bar = document.getElementById('fbar' + i);
+    if (bar) bar.style.height = '4px';
+  }
+}
+
+// APPLY PIPELINE STATE
+function applyPipelineState(idx) {
+  const state = pipelineStates[idx];
+  ['ps1','ps2','ps3','ps4','ps5','ps6'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.className = 'pipe-stage ' + (state[id] || '');
+  });
+  ['pa1','pa2','pa3','pa4','pa5'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.className = 'pipe-arrow ' + (state[id] || '');
+  });
+}
+
+// UPDATE PHASE STEPPER
+function updateStepper(idx) {
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const stepEl = document.getElementById('pStep' + i);
+    if (stepEl) {
+      if (i === idx) stepEl.classList.add('active');
+      else stepEl.classList.remove('active');
+    }
+  }
+}
+
+// APPLY STEP
+function applyStep(idx) {
+  const s = steps[idx];
+
+  applyPipelineState(idx);
+  updateNarrative(s.narrative);
+  updateStepper(idx);
+
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+  // Show correct hook bar message for the active step
+  var hm4 = document.getElementById('hookMsg4');
+  var hm5 = document.getElementById('hookMsg5');
+  if (hm4) hm4.style.display = (idx === 4) ? '' : 'none';
+  if (hm5) hm5.style.display = (idx === 5) ? '' : 'none';
+
+  if (idx === 3) {
+    setTimeout(animateFreqBars, 350);
+  } else {
+    resetFreqBars();
+  }
+
+  // S2.4: Shattered lock — reset + replay animation on step 5 entrance
+  var lockEl = document.getElementById('shatteredLock');
+  if (lockEl) {
+    if (idx === 4) {
+      lockEl.classList.remove('animate');
+      // force reflow so removing the class takes effect before re-adding
+      void lockEl.offsetWidth;
+      setTimeout(function() { lockEl.classList.add('animate'); }, 80);
+    } else {
+      lockEl.classList.remove('animate');
+    }
+  }
+
+  document.querySelectorAll('.step-section').forEach(function(el) { el.classList.remove('active'); });
+  const section = document.getElementById('detail-' + idx);
+  if (section) section.classList.add('active');
+
+  document.querySelector('.detail-area').scrollTo({ top: 0, behavior: 'smooth' });
+
+  for (let i = 0; i < TOTAL_STEPS; i++) {
+    const d = document.getElementById('dot' + i);
+    if (!d) continue;
+    d.classList.remove('active','done');
+    if (i === idx) d.classList.add('active');
+    if (i < idx)   d.classList.add('done');
+  }
+
+  document.getElementById('btnPrev').disabled = (idx === 0);
+  const isLast2 = idx === TOTAL_STEPS - 1;
+  document.getElementById('btnNext').disabled = false;
+  document.getElementById('btnNext').textContent = isLast2 ? 'SCENE 03 \u2192' : (idx === TOTAL_STEPS - 2 ? 'FINISH \u25ba' : 'NEXT \u25ba');
+  document.getElementById('btnNext').classList.toggle('scene-forward', isLast2);
+}
+
+function updateNarrative(n) {
+  const cells = [
+    { ncId: 'nc-left',  nlId: 'nl-left',  ntId: 'nt-left',  cell: n.left  },
+    { ncId: 'nc-mid',   nlId: 'nl-mid',   ntId: 'nt-mid',   cell: n.mid   },
+    { ncId: 'nc-right', nlId: 'nl-right', ntId: 'nt-right', cell: n.right },
+  ];
+  cells.forEach(function(item) {
+    const ncId = item.ncId, nlId = item.nlId, ntId = item.ntId, cell = item.cell;
+    document.getElementById(nlId).textContent = cell.label;
+    document.getElementById(nlId).className = 'narr-label ' + (cell.cls || '');
+    document.getElementById(ntId).innerHTML  = cell.text;
+    const cls = cell.cls;
+    document.getElementById(ncId).className = 'narr-cell' +
+      (cls === 'blue'  ? ' active'         :
+       cls === 'red'   ? ' active-threat'  :
+       cls === 'green' ? ' active-quantum' : '');
+  });
+}
+
+function nextStep() {
+  if (currentStep < TOTAL_STEPS - 1) { currentStep++; applyStep(currentStep); }
+  else { window.location.href = 'scene3_HND_interactive.html'; }
+}
+function prevStep() {
+  if (currentStep > 0) { currentStep--; applyStep(currentStep); }
+}
+function resetScene() {
+  currentStep = 0;
+  applyStep(0);
+}
+
+// GLOSSARY
+const GLOSSARY = {
+  'qubit': {
+    term: 'QUBIT',
+    def: 'A quantum bit. Unlike a classical bit (0 or 1), a qubit can exist in superposition — holding both 0 and 1 simultaneously. When measured, it collapses to one value.'
+  },
+  'superposition': {
+    term: 'SUPERPOSITION',
+    def: 'A quantum state combining multiple outcomes at once. A qubit in superposition holds both 0 and 1 simultaneously — not alternating between them, but genuinely both, until measured.'
+  },
+  'entanglement': {
+    term: 'ENTANGLEMENT',
+    def: 'A link between two quantum systems where knowing the state of one instantly determines something about the other. In Shor\'s algorithm, the input and output registers become entangled after the oracle runs.'
+  },
+  'hadamard': {
+    term: 'HADAMARD GATE',
+    def: 'A quantum gate that places a qubit into equal superposition — 50/50 chance of 0 or 1. A quantum gate is the quantum equivalent of a logic gate: it manipulates qubits rather than classical bits.'
+  },
+  'oracle': {
+    term: 'QUANTUM ORACLE',
+    def: 'A black-box quantum subroutine that applies a function to an entire superposition at once. Not "checking inputs one at a time" — the oracle processes all inputs in a single operation.'
+  },
+  'braket': {
+    term: 'BRA-KET NOTATION',
+    def: '|ψ⟩ ("ket psi") is standard quantum notation for a quantum state. |0⟩ = the state corresponding to 0. |ψ⟩ = some superposition state. Think of it as a label for quantum states.'
+  },
+  'qft': {
+    term: 'QUANTUM FOURIER TRANSFORM',
+    def: 'The quantum analogue of the classical Fourier Transform. Like a prism splitting white light into its color spectrum, the QFT splits the quantum state into frequency components — making the hidden period r measurable.'
+  },
+  'amplitudes': {
+    term: 'PROBABILITY AMPLITUDES',
+    def: 'Quantum values whose squares give the probability of each measurement outcome. Think of them as weighted votes for each possible result. The QFT arranges these so peaks appear at the period r.'
+  },
+  'continued-fraction': {
+    term: 'CONTINUED FRACTION EXPANSION',
+    def: 'A classical algorithm (milliseconds) that works backwards from the measured integer m to recover the exact period r. Like GPS triangulation: an imprecise signal resolved to a precise answer.'
+  },
+  'big-o': {
+    term: 'BIG-O NOTATION',
+    def: 'A measure of how fast a problem\'s difficulty grows as its size increases. O((log N)³) = grows gently. O(exp(...)) = grows explosively. Sub-exponential is between: still huge, but slower than purely exponential.'
+  },
+  'crqc': {
+    term: 'CRQC',
+    def: 'Cryptographically Relevant Quantum Computer. A quantum machine large enough and stable enough to run Shor\'s algorithm at RSA-2048 scale. Does not yet exist — but governments and cryptographers are preparing for it now.'
+  },
+  'mod-exp': {
+    term: 'MODULAR EXPONENTIATION',
+    def: 'Computing aˣ mod N: raise a to the power x, divide by N, keep the remainder. Easy to compute forward; the basis of RSA security classically. The quantum oracle computes this across all inputs simultaneously.'
+  }
+};
+
+(function() {
+  var tooltip = document.getElementById('glossary-tooltip');
+  var ttTerm  = tooltip.querySelector('.tt-term');
+  var ttDef   = tooltip.querySelector('.tt-def');
+  document.addEventListener('mouseover', function(e) {
+    var el = e.target.closest('.glossary-term');
+    if (!el) return;
+    var entry = GLOSSARY[el.dataset.term];
+    if (!entry) return;
+    ttTerm.textContent = entry.term;
+    ttDef.textContent  = entry.def;
+    tooltip.classList.add('visible');
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!tooltip.classList.contains('visible')) return;
+    var x = e.clientX + 16;
+    var y = e.clientY + 16;
+    tooltip.style.left = Math.min(x, window.innerWidth  - 298) + 'px';
+    tooltip.style.top  = Math.min(y, window.innerHeight - 160) + 'px';
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (e.target.closest('.glossary-term')) tooltip.classList.remove('visible');
+  });
+})();
+
+// INIT
+buildFreqBars();
+applyStep(0);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') nextStep();
+  if (e.key === 'ArrowLeft') prevStep();
+});
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>

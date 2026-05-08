@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Encryption Surface — PQC Demo Scene 07 (Kiosk)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.18);
+  --text:        #c8d0de;
+  --text-dim:    #7a8799;
+  --text-bright: #f2f4f8;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff5500;
+  --threat-red:  #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+body::before {
+  content:''; position: fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(0,153,215,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,153,215,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 12px; border-radius: 2px;
+  background: transparent; cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.home-btn:hover { color: var(--text-bright); border-color: var(--border-mid); }
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  color: var(--quantum); text-transform: uppercase;
+  border-radius: 4px; padding: 3px 10px;
+  border: 1px solid rgba(0,232,122,0.3);
+  background: rgba(0,232,122,0.06);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px; letter-spacing: 4px; color: #fff;
+}
+header h1 span { color: var(--quantum); }
+.sim-badge {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase;
+  border: 1px solid var(--border); padding: 4px 10px; border-radius: 2px;
+}
+
+/* ── PHASE STEPPER ── */
+.phase-timeline {
+  flex-shrink: 0; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 10;
+}
+.stepper { display: flex; align-items: center; gap: 0; }
+.phase-step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.phase-dot {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid var(--border-mid); background: var(--bg3);
+  transition: all 0.6s ease;
+  position: relative; z-index: 1;
+}
+.phase-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; letter-spacing: 1.5px;
+  color: var(--text-dim); text-transform: uppercase;
+  white-space: nowrap; transition: color 0.6s ease;
+}
+.phase-line { width: 128px; height: 1px; background: var(--border-mid); margin-bottom: 14px; transition: background 0.6s ease; }
+.phase-step.active .phase-dot { background: var(--safe-glow); border-color: var(--safe-glow); box-shadow: 0 0 8px var(--safe-glow); }
+.phase-step.active .phase-label { color: var(--safe-glow); font-weight: 600; }
+.phase-step.pqc-active .phase-dot { background: var(--quantum); border-color: var(--quantum); box-shadow: 0 0 8px var(--quantum); }
+.phase-step.pqc-active .phase-label { color: var(--quantum); }
+.phase-line.line-active { background: var(--safe-glow); }
+.phase-line.line-pqc    { background: var(--quantum); }
+
+/* ── NARRATIVE BAR ── */
+.narrative-bar {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  padding: 12px 32px;
+  min-height: 115px;
+  display: flex; align-items: center; gap: 20px;
+}
+.narr-step-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; letter-spacing: 3px;
+  color: var(--safe-glow); text-transform: uppercase;
+  flex-shrink: 0; min-width: 80px;
+  transition: color 0.4s ease;
+}
+.narr-step-label.pqc { color: var(--quantum); }
+.narr-divider { width: 1px; height: 40px; background: var(--border); flex-shrink: 0; }
+.narr-body { flex: 1; }
+.narr-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 2px; color: #fff;
+  line-height: 1.2; margin-bottom: 4px;
+}
+.narr-text { font-size: 15px; line-height: 1.65; color: var(--text); text-transform: none; font-weight: 500; }
+.narr-text strong { color: var(--text-bright); font-weight: 700; }
+.narr-text em     { color: var(--quantum); font-style: normal; font-weight: 600; }
+.narr-text .danger { color: var(--threat-glow); font-weight: 600; }
+
+/* ── STAGE ── */
+.stage {
+  flex: 1; min-height: 0;
+  display: flex; gap: 0; overflow: hidden;
+}
+
+/* ── GRID PANEL (4x2 layout: 7 domain cards + 1 summary card) ── */
+.grid-panel {
+  flex: 0 0 62%;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.domain-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.domain-card.has-hit {
+  border-color: rgba(255,85,0,0.35);
+  box-shadow: 0 0 16px rgba(255,85,0,0.1);
+}
+.domain-card.pqc-done {
+  border-color: rgba(0,232,122,0.35);
+  box-shadow: 0 0 16px rgba(0,232,122,0.1);
+}
+.domain-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.domain-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px; letter-spacing: 2px; color: #fff;
+}
+.domain-meta {
+  display: flex; align-items: center; gap: 6px;
+}
+.domain-id {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 1.5px;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.domain-hit-count {
+  font-family: 'Inconsolata', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--threat-glow);
+  padding: 1px 5px; border-radius: 3px;
+  background: rgba(255,85,0,0.1);
+  border: 1px solid rgba(255,85,0,0.3);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.domain-card.has-hit .domain-hit-count { opacity: 1; }
+.domain-card.pqc-done .domain-hit-count {
+  color: var(--quantum);
+  background: rgba(0,232,122,0.1);
+  border-color: rgba(0,232,122,0.3);
+}
+
+.chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Chip — dim classical baseline */
+.chip {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 6px 7px 7px 7px;
+  display: flex; align-items: flex-start; gap: 5px;
+  transition: all 0.5s ease;
+  opacity: 0.65;
+  position: relative;
+  overflow: visible;
+  min-height: 54px;
+}
+.chip-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 3px;
+  background: var(--safe-glow);
+  transition: all 0.5s ease;
+}
+.chip-body { flex: 1; min-width: 0; }
+.chip-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px; letter-spacing: 0.5px;
+  color: #ffffff; text-transform: uppercase;
+  line-height: 1.3;
+  white-space: normal; overflow: visible;
+  font-weight: 600;
+  transition: color 0.5s ease;
+}
+.chip-algo {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 0.2px;
+  color: #e0e8f4;
+  line-height: 1.35;
+  white-space: normal; overflow: visible;
+  transition: color 0.5s ease;
+}
+
+/* Chip — lit (highlighted category at this step) */
+.chip.lit {
+  background: rgba(255,85,0,0.1);
+  border-color: rgba(255,85,0,0.45);
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(255,85,0,0.2);
+}
+.chip.lit .chip-dot {
+  background: var(--threat-glow);
+  box-shadow: 0 0 6px var(--threat-glow);
+}
+.chip.lit .chip-label { color: #ffd090; }
+.chip.lit .chip-algo  { color: rgba(255,175,100,0.85); }
+
+/* Chip — pqc-migrated (step 5 final state) */
+.chip.pqc {
+  background: rgba(0,232,122,0.09);
+  border-color: rgba(0,232,122,0.45);
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(0,232,122,0.18);
+}
+.chip.pqc .chip-dot {
+  background: var(--quantum);
+  box-shadow: 0 0 6px var(--quantum);
+}
+.chip.pqc .chip-label { color: #b8f5d4; }
+.chip.pqc .chip-algo  { color: rgba(120,240,175,0.8); }
+
+/* Summary card (8th slot) */
+.summary-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-top: 3px solid var(--threat-glow);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  transition: border-top-color 0.5s ease;
+}
+.summary-card.pqc { border-top-color: var(--quantum); }
+.summary-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px; letter-spacing: 2px; color: #fff;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.summary-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 54px; line-height: 0.9;
+  color: var(--threat-glow);
+  letter-spacing: 1px;
+  transition: color 0.5s ease;
+}
+.summary-card.pqc .summary-big { color: var(--quantum); }
+.summary-sub {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 1.5px;
+  color: var(--text); text-transform: uppercase;
+  line-height: 1.3;
+}
+.summary-legend {
+  margin-top: auto;
+  display: flex; flex-direction: column; gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.legend-row {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px; letter-spacing: 0.5px;
+  color: var(--text-dim); text-transform: uppercase;
+}
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.legend-dot.lit { background: var(--threat-glow); box-shadow: 0 0 4px var(--threat-glow); }
+.legend-dot.dim { background: var(--safe-glow); opacity: 0.6; }
+.legend-dot.pqc { background: var(--quantum); box-shadow: 0 0 4px var(--quantum); }
+
+/* ── DETAIL PANEL ── */
+.detail-panel {
+  flex: 1;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  padding: 14px 16px 18px;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  margin: 12px 12px 12px 0;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--threat-glow);
+  box-shadow: 0 4px 11px rgba(0,0,0,0.4);
+  transition: border-top-color 0.4s ease;
+  min-height: 0;
+}
+.detail-panel.step-final { border-top-color: var(--quantum); }
+.detail-panel::-webkit-scrollbar { width: 4px; }
+.detail-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.detail-section {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeUp 0.38s ease both;
+}
+.detail-section.visible { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.impact-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+.impact-header.threat    { background: rgba(255,85,0,0.07); border-color: rgba(255,85,0,0.22); }
+.impact-header.pqc       { background: rgba(0,232,122,0.06); border-color: rgba(0,232,122,0.22); }
+.impact-header.neutral   { background: rgba(42,159,214,0.06); border-color: rgba(42,159,214,0.22); }
+.impact-icon {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  flex-shrink: 0;
+  padding: 5px 8px; border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.8; line-height: 1;
+}
+.impact-header.threat  .impact-icon { color: var(--threat-glow); }
+.impact-header.pqc     .impact-icon { color: var(--quantum); }
+.impact-header.neutral .impact-icon { color: var(--safe-glow); }
+.impact-category {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+}
+.impact-header.threat  .impact-category { color: rgba(255,85,0,0.75); }
+.impact-header.pqc     .impact-category { color: rgba(0,232,122,0.75); }
+.impact-header.neutral .impact-category { color: rgba(42,159,214,0.75); }
+.impact-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; letter-spacing: 2px; color: #fff;
+  line-height: 1;
+}
+
+.info-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.card-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.card-label.red   { color: var(--threat-glow); }
+.card-label.amber { color: var(--amber); }
+.card-label.blue  { color: var(--safe-glow); }
+.card-label.green { color: var(--quantum); }
+.card-body { font-size: 14px; line-height: 1.5; color: var(--text); }
+.card-body strong { color: var(--text); }
+.card-body em { color: var(--quantum); font-style: normal; font-weight: 600; }
+.card-body .danger { color: var(--threat-glow); font-weight: 600; }
+
+/* Playbook list (step 5) */
+.playbook-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.playbook-item {
+  display: flex; gap: 10px;
+  padding: 8px 10px;
+  background: rgba(0,232,122,0.04);
+  border: 1px solid rgba(0,232,122,0.15);
+  border-radius: 8px;
+}
+.playbook-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px; color: var(--quantum);
+  line-height: 1; flex-shrink: 0;
+  min-width: 20px;
+}
+.playbook-body {
+  font-size: 13px; line-height: 1.4;
+  color: var(--text);
+}
+.playbook-body strong { color: var(--text-bright); }
+
+/* ── HOOK BAR ── */
+.hook-bar {
+  flex-shrink: 0;
+  background: rgba(0,232,122,0.08);
+  border-top: 5px solid var(--quantum);
+  padding: 9px 32px;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 20px;
+}
+.hook-bar.show { display: flex; }
+.hook-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(200,240,210,0.92);
+  line-height: 1.4;
+}
+.hook-text strong { color: #fff; }
+.hook-text em     { color: var(--quantum); font-style: normal; }
+.hook-cta {
+  font-size: 13px;
+  background: var(--quantum);
+  color: #07080d;
+  padding: 8px 18px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 2px;
+  text-decoration: none; border: none;
+  display: inline-block; white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Inconsolata', monospace;
+}
+
+/* ── SCROLL FADE ── */
+.scroll-fade {
+  position: sticky;
+  bottom: 0;
+  flex-shrink: 0;
+  height: 36px;
+  background: linear-gradient(transparent, var(--bg2));
+  margin-top: -36px;
+  pointer-events: none;
+  border-radius: 0 0 14px 14px;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 36px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  min-height: 44px;
+}
+.btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px; letter-spacing: 2px;
+  color: var(--text-bright);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-mid);
+  padding: 8px 20px; min-height: 36px;
+  cursor: pointer; border-radius: 6px;
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+}
+.btn:hover:not(:disabled) {
+  color: var(--text-bright);
+  border-color: var(--border-mid);
+  background: rgba(255,255,255,0.1);
+}
+.btn:disabled { opacity: 0.25; cursor: default; }
+.btn:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }
+.step-dots { display: flex; gap: 8px; align-items: center; }
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s, transform 0.3s;
+  cursor: pointer;
+}
+.step-dot:hover { transform: scale(1.3); }
+.step-dot.active { background: var(--safe-glow); transform: scale(1.5); }
+.step-dot.pqc-active { background: var(--quantum); transform: scale(1.5); }
+.ctrl-brand {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ── NEXT button highlight ── */
+#btnNext:not(:disabled) {
+  background: rgba(0,153,215,0.15);
+  border-color: rgba(0,153,215,0.5);
+  color: #5cc8f5;
+}
+#btnNext:not(:disabled):hover {
+  background: rgba(0,153,215,0.25);
+  box-shadow: 0 0 14px rgba(0,153,215,0.35);
+}
+
+/* ── Domain hit count ── */
+.domain-hit-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ── Keyboard hint overlay ── */
+.keyboard-hint {
+  position: fixed;
+  bottom: 58px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,15,22,0.92);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 11px; letter-spacing: 1px;
+  color: var(--text-dim); text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 1s ease;
+  z-index: 100;
+}
+.keyboard-hint.fade { opacity: 0; }
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  color: #f2f4f8;
+  font-size: 16px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+  line-height: 1; padding: 0;
+}
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.35);
+}
+
+/* ══════════════════════════════════════════
+   LIGHT MODE — applied via html.light-mode
+   ══════════════════════════════════════════ */
+html.light-mode {
+  --bg:   #eef0f5; --bg2:  #e2e5ee; --bg3:  #d6dae6;
+  --panel: rgba(0,0,0,0.04);
+  --border: rgba(0,0,0,0.12); --border-mid: rgba(0,0,0,0.28);
+  --text: #1c2333; --text-dim: #4a5570; --text-bright: #080d1a;
+  --safe-glow: #1070b8; --threat-glow: #c84000;
+  --threat-red: #c01008; --quantum: #007a40; --amber: #b06000;
+}
+html.light-mode body { background: var(--bg); color: var(--text); }
+html.light-mode body::before {
+  background-image:
+    linear-gradient(rgba(0,60,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,60,160,0.05) 1px, transparent 1px);
+}
+html.light-mode header,
+html.light-mode .phase-timeline,
+html.light-mode .narrative-bar,
+html.light-mode .controls { background: var(--bg2); border-color: var(--border); }
+html.light-mode .domain-card {
+  background: #ffffff; border-color: rgba(0,0,0,0.13);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+html.light-mode .domain-card.has-hit { border-color: rgba(200,64,0,0.45); }
+html.light-mode .domain-card.pqc-done { border-color: rgba(0,122,64,0.45); }
+html.light-mode .domain-title { color: #080d1a; }
+html.light-mode .domain-id { color: #4a5570; }
+html.light-mode .chip {
+  background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); opacity: 1;
+}
+html.light-mode .chip.lit { background: rgba(200,64,0,0.08); border-color: rgba(200,64,0,0.3); }
+html.light-mode .chip.pqc { background: rgba(0,122,64,0.08); border-color: rgba(0,122,64,0.3); }
+html.light-mode .chip-label { color: #080d1a !important; }
+html.light-mode .chip-algo { color: #2d3a55 !important; }
+html.light-mode .chip.lit .chip-label { color: #a83400 !important; }
+html.light-mode .chip.pqc .chip-label { color: #006030 !important; }
+html.light-mode .detail-panel {
+  background: #ffffff; border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+html.light-mode .impact-header.threat { background: rgba(200,64,0,0.06); border-color: rgba(200,64,0,0.2); }
+html.light-mode .impact-header.pqc { background: rgba(0,122,64,0.06); border-color: rgba(0,122,64,0.2); }
+html.light-mode .impact-header.neutral { background: rgba(16,112,184,0.06); border-color: rgba(16,112,184,0.2); }
+html.light-mode .impact-title { color: #080d1a; }
+html.light-mode .info-card { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+html.light-mode .card-body { color: #1c2333; }
+html.light-mode .card-body strong { color: #080d1a; }
+html.light-mode .playbook-item { background: rgba(0,122,64,0.04); border-color: rgba(0,122,64,0.15); }
+html.light-mode .playbook-body { color: #1c2333; }
+html.light-mode .summary-card { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+html.light-mode .summary-title { color: #080d1a !important; }
+html.light-mode .summary-sub { color: #1c2333 !important; }
+html.light-mode .narr-text { color: #1c2333 !important; }
+html.light-mode .narr-text strong { color: #080d1a !important; }
+html.light-mode .narr-headline { color: #080d1a !important; }
+html.light-mode .home-btn { color: #4a5570; border-color: rgba(0,0,0,0.18); }
+html.light-mode .home-btn:hover { color: #080d1a; border-color: rgba(0,0,0,0.35); }
+html.light-mode .btn { color: #080d1a; border-color: rgba(0,0,0,0.22); background: rgba(0,0,0,0.06); }
+html.light-mode .btn:hover:not(:disabled) { color: #080d1a; border-color: rgba(0,0,0,0.35); background: rgba(0,0,0,0.1); }
+html.light-mode #btnNext:not(:disabled) { background: rgba(16,112,184,0.12); border-color: rgba(16,112,184,0.4); color: var(--safe-glow); }
+html.light-mode .step-dot { background: rgba(0,0,0,0.2); }
+html.light-mode .step-dot.active { background: var(--safe-glow); }
+html.light-mode .step-dot.pqc-active { background: var(--quantum); }
+html.light-mode .ctrl-brand { color: #4a5570; }
+html.light-mode .legend-row { color: #4a5570 !important; }
+html.light-mode .scroll-fade { background: linear-gradient(transparent, #ffffff); }
+html.light-mode .theme-toggle { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.2); color: #1c2333; }
+html.light-mode .theme-toggle:hover { background: rgba(0,0,0,0.13); border-color: rgba(0,0,0,0.32); }
+html.light-mode .hook-bar { background: rgba(0,122,64,0.08); border-top-color: var(--quantum); }
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <a href="navigation_shell.html" class="home-btn">&#8592; MENU</a>
+    <div class="scene-tag">SCENE 07 · REFERENCE</div>
+    <h1>THE <span>ENCRYPTION</span> SURFACE</h1>
+  </div>
+  <div class="header-right" style="display:flex;align-items:center;gap:10px;">
+    <div class="sim-badge" id="simBadge">ENTERPRISE · 42 TOUCHPOINTS</div>
+    <button class="theme-toggle" id="themeToggle" title="Switch to light mode">☀</button>
+  </div>
+</header>
+
+<!-- PHASE STEPPER -->
+<div class="phase-timeline">
+  <div class="stepper">
+    <div class="phase-step active" id="pstep0"><div class="phase-dot"></div><div class="phase-label">SURVEY</div></div>
+    <div class="phase-line" id="pline0"></div>
+    <div class="phase-step" id="pstep1"><div class="phase-dot"></div><div class="phase-label">TRANSIT</div></div>
+    <div class="phase-line" id="pline1"></div>
+    <div class="phase-step" id="pstep2"><div class="phase-dot"></div><div class="phase-label">AT REST</div></div>
+    <div class="phase-line" id="pline2"></div>
+    <div class="phase-step" id="pstep3"><div class="phase-dot"></div><div class="phase-label">SIGNING</div></div>
+    <div class="phase-line" id="pline3"></div>
+    <div class="phase-step" id="pstep4"><div class="phase-dot"></div><div class="phase-label">PLAYBOOK</div></div>
+  </div>
+</div>
+
+<!-- NARRATIVE BAR -->
+<div class="narrative-bar">
+  <div class="narr-step-label" id="narrStepLabel">STEP 1 / 5</div>
+  <div class="narr-divider"></div>
+  <div class="narr-body">
+    <div class="narr-headline" id="narrHeadline">MEET THE ENCRYPTION SURFACE.</div>
+    <div class="narr-text" id="narrText">Every modern enterprise runs on encryption — across <strong>7 domains</strong> and <strong>42 distinct touchpoints</strong>. Most of it relies on RSA and ECC. <em>All of it needs a plan.</em></div>
+  </div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+
+  <!-- LEFT: 4x2 DOMAIN GRID -->
+  <div class="grid-panel">
+
+    <!-- Domain 1: Endpoint -->
+    <div class="domain-card" data-domain="endpoint">
+      <div class="domain-head">
+        <div class="domain-title">ENDPOINT &middot; USER</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">01</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Browser TLS</div><div class="chip-algo">ECDHE+RSA-2048</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">VPN Client</div><div class="chip-algo">IKEv2 / WireGuard</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">S/MIME Email</div><div class="chip-algo">RSA-2048 sig</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Device Attest</div><div class="chip-algo">TPM ECDSA</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">FDE / BitLocker</div><div class="chip-algo">AES + RSA wrap</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Password Vault</div><div class="chip-algo">AES-GCM + KDF</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 2: Network / Edge -->
+    <div class="domain-card" data-domain="network">
+      <div class="domain-head">
+        <div class="domain-title">NETWORK &middot; EDGE</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">02</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">TLS Termination</div><div class="chip-algo">ECDHE+RSA/ECC</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">IPsec S2S</div><div class="chip-algo">IKEv2 DH-2048</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">SASE / ZTNA</div><div class="chip-algo">mTLS ECDHE</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">CDN / WAF</div><div class="chip-algo">RSA-2048 certs</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Mail Gateway</div><div class="chip-algo">STARTTLS</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">DNSSEC</div><div class="chip-algo">ECDSA P-256</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 3: Apps & SaaS -->
+    <div class="domain-card" data-domain="apps">
+      <div class="domain-head">
+        <div class="domain-title">APPS &middot; SaaS</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">03</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">API GW mTLS</div><div class="chip-algo">ECDHE P-256</div></div></div>
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">SaaS TLS</div><div class="chip-algo">vendor-managed</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Webhook HMAC</div><div class="chip-algo">HMAC-SHA256</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">B2B / EDI</div><div class="chip-algo">AS2 / PGP</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">App-Layer Enc</div><div class="chip-algo">field AES</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Session Cookie</div><div class="chip-algo">HS256 / RS256</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 4: Cloud & Compute -->
+    <div class="domain-card" data-domain="cloud">
+      <div class="domain-head">
+        <div class="domain-title">CLOUD &middot; COMPUTE</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">04</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Service Mesh mTLS</div><div class="chip-algo">SPIFFE ECDHE</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">K8s etcd</div><div class="chip-algo">AES-CBC + KMS</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Image Signing</div><div class="chip-algo">Cosign ECDSA</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Cloud KMS / HSM</div><div class="chip-algo">RSA-2048 wrap</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Secrets Manager</div><div class="chip-algo">Vault transit</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Secure Boot / TPM</div><div class="chip-algo">TPM + RSA/ECC</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 5: Data Layer -->
+    <div class="domain-card" data-domain="data">
+      <div class="domain-head">
+        <div class="domain-title">DATA LAYER</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">05</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="transit"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Kafka / MQ TLS</div><div class="chip-algo">TLS ECDHE</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Database TDE</div><div class="chip-algo">AES + RSA wrap</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Field-Level Enc</div><div class="chip-algo">app-layer AES</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Object Storage SSE</div><div class="chip-algo">SSE-KMS</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Backup / Snapshot</div><div class="chip-algo">snapshot + KMS</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Tape / Archive</div><div class="chip-algo">LTO + KMIP</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 6: DevOps -->
+    <div class="domain-card" data-domain="devops">
+      <div class="domain-head">
+        <div class="domain-title">DEVOPS &middot; SUPPLY</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">06</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Git Commit Sign</div><div class="chip-algo">GPG / Ed25519</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">CI/CD OIDC</div><div class="chip-algo">RS256 JWT</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Cosign / Sigstore</div><div class="chip-algo">Sigstore ECDSA</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Package Signing</div><div class="chip-algo">npm/PyPI/Maven</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">SBOM Attest</div><div class="chip-algo">in-toto / SLSA</div></div></div>
+        <div class="chip" data-cat="rest"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">IaC State Enc</div><div class="chip-algo">TF + KMS</div></div></div>
+      </div>
+    </div>
+
+    <!-- Domain 7: Identity / PKI -->
+    <div class="domain-card" data-domain="identity">
+      <div class="domain-head">
+        <div class="domain-title">IDENTITY &middot; PKI</div>
+        <div class="domain-meta">
+          <div class="domain-hit-count" data-hitcount></div>
+          <div class="domain-id">07</div>
+        </div>
+      </div>
+      <div class="chip-grid">
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Root / Interm CA</div><div class="chip-algo">RSA-4096 / P-384</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Client Cert / mTLS</div><div class="chip-algo">ECDSA P-256</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">Smartcard / PIV</div><div class="chip-algo">RSA-2048 / ECC</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">WebAuthn / FIDO2</div><div class="chip-algo">ECDSA P-256</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">SAML Federation</div><div class="chip-algo">RSA-SHA256</div></div></div>
+        <div class="chip" data-cat="sign"><div class="chip-dot"></div><div class="chip-body"><div class="chip-label">OIDC / JWT</div><div class="chip-algo">RS256 / ES256</div></div></div>
+      </div>
+    </div>
+
+    <!-- Summary card (live counter) -->
+    <div class="summary-card" id="summaryCard">
+      <div class="summary-title" id="summaryTitle">SURVEY</div>
+      <div>
+        <div class="summary-big" id="summaryBig">42</div>
+        <div class="summary-sub" id="summarySub">total touchpoints<br>across 7 domains</div>
+      </div>
+      <div class="summary-legend">
+        <div class="legend-row"><div class="legend-dot dim"></div><span>classical crypto</span></div>
+        <div class="legend-row"><div class="legend-dot lit"></div><span>at-risk this step</span></div>
+        <div class="legend-row"><div class="legend-dot pqc"></div><span>pqc-migrated</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: DETAIL PANEL -->
+  <div class="detail-panel" id="detailPanel">
+    <!-- STEP 0: SURVEY -->
+    <div class="detail-section" id="sec0">
+      <div class="impact-header neutral">
+        <div class="impact-icon">MAP</div>
+        <div>
+          <div class="impact-category">The Inventory</div>
+          <div class="impact-title">WHERE DOES CRYPTO LIVE?</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label blue">THE PICTURE</div>
+        <div class="card-body">
+          This grid is every place encryption touches an enterprise — from the laptop in someone's bag to the tape in a vault. <strong>Seven domains. Forty-two touchpoints.</strong> Every one of them has a cryptographic algorithm underneath.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label blue">THREE KINDS OF CRYPTO</div>
+        <div class="card-body">
+          Everything here does one of three jobs: <strong>moves data</strong> (in-transit), <strong>stores data</strong> (at-rest), or <strong>proves identity or integrity</strong> (signing). We'll walk through each — and show which ones a quantum computer breaks.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">WHY A MAP MATTERS</div>
+        <div class="card-body">
+          You cannot migrate what you cannot see. <em>Every PQC migration starts with this map.</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: IN-TRANSIT -->
+    <div class="detail-section" id="sec1">
+      <div class="impact-header threat">
+        <div class="impact-icon">&gt;&gt;</div>
+        <div>
+          <div class="impact-category">Category &middot; In-Transit</div>
+          <div class="impact-title">DATA ON THE MOVE</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">WHAT BREAKS</div>
+        <div class="card-body">
+          Every secure channel — HTTPS, VPN, SSH, mTLS — begins with a <strong>handshake</strong> that uses ECDHE, X25519, or RSA key exchange to agree on a session key. A quantum computer watches the handshake and <span class="danger">recovers the key</span>. The session is readable.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">WHY IT'S EVERYWHERE</div>
+        <div class="card-body">
+          Look at the grid — <strong>11 of 42 touchpoints</strong> across nearly every domain rely on the same broken handshake. This is not one system you patch. <em>It is the wiring of the internet.</em>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">THE HARVEST PROBLEM</div>
+        <div class="card-body">
+          <strong>HNDL (Harvest Now, Decrypt Later)</strong> — adversaries record encrypted traffic <strong>today</strong> and decrypt it <strong>later</strong>. Anything sent in-transit right now that needs secrecy past 2030 is already exposed.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label green">THE FIX EXISTS</div>
+        <div class="card-body">
+          The hybrid cipher <em>X25519+ML-KEM-768 (FIPS 203)</em> replaces the key exchange. Google, Cloudflare, and Apple are already shipping it. <strong>The clock is inventory, not invention.</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: AT-REST -->
+    <div class="detail-section" id="sec2">
+      <div class="impact-header threat">
+        <div class="impact-icon">[]</div>
+        <div>
+          <div class="impact-category">Category &middot; At-Rest</div>
+          <div class="impact-title">DATA THAT SITS STILL</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">WHAT BREAKS</div>
+        <div class="card-body">
+          Disks, databases, backups, and object storage all use <strong>AES</strong> — which a quantum computer does <em>not</em> break. But the <strong>key that unlocks them</strong> is almost always wrapped with RSA. Break the wrapper, unlock the vault.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">THE TAPE PROBLEM</div>
+        <div class="card-body">
+          <strong>12 of 42 touchpoints</strong> store data with RSA-wrapped keys. Backups and tape archives are the most exposed — they sit for <span class="danger">years or decades</span>. An attacker who copies a tape today — along with its RSA-wrapped key material — can decrypt it when a quantum computer arrives.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">KMS AND HSM ARE NOT SAFE</div>
+        <div class="card-body">
+          Cloud KMS and HSM services protect the master keys — but those master keys are RSA or ECC. <strong>If the HSM speaks RSA, the HSM is in scope.</strong>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label green">THE FIX</div>
+        <div class="card-body">
+          Re-wrap at-rest keys with <em>ML-KEM</em>. The AES underneath stays. The wrapper changes. Requires KMS/HSM vendor support — ask yours about their PQC roadmap.
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: SIGNING -->
+    <div class="detail-section" id="sec3">
+      <div class="impact-header threat">
+        <div class="impact-icon">ID</div>
+        <div>
+          <div class="impact-category">Category &middot; Signatures &amp; Identity</div>
+          <div class="impact-title">THE TRUST LAYER</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">WHAT BREAKS</div>
+        <div class="card-body">
+          Every digital signature — certificates, JWTs, code signatures, Git commits, passports — uses <strong>RSA, ECDSA, or Ed25519</strong> (all discrete log problems, all broken by Shor's). A quantum computer <span class="danger">forges them all</span>. The trust chain that underpins the entire software supply chain collapses.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label red">THE BIGGEST CATEGORY</div>
+        <div class="card-body">
+          <strong>19 of 42 touchpoints</strong> rely on signatures — the largest category. The entire <strong>Identity / PKI</strong> domain lights up. So does most of DevOps and the supply chain.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label amber">THIS IS HOW MALWARE BECOMES "LEGITIMATE"</div>
+        <div class="card-body">
+          Forge a code-signing certificate, sign your malware, ship it through the auto-update pipeline. Every endpoint installs it as a trusted update. A forged DNSSEC signature enables full DNS spoofing — even of HTTPS domains. <em>These are the nightmare scenarios.</em>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label green">THE FIX</div>
+        <div class="card-body">
+          <em>ML-DSA (FIPS 204)</em> and <em>SLH-DSA (FIPS 205)</em> replace RSA and ECDSA for signatures. PKI vendors are rolling out hybrid certs — ask your CA about their timeline.
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: PLAYBOOK -->
+    <div class="detail-section" id="sec4">
+      <div class="impact-header pqc">
+        <div class="impact-icon">GO</div>
+        <div>
+          <div class="impact-category">The Playbook</div>
+          <div class="impact-title">WHAT LEADERSHIP OWNS</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="card-label green">THE POSTURE</div>
+        <div class="card-body">
+          Every chip on the grid is now <em>green</em> — that is the destination. Getting there is a <strong>multi-year program</strong>, not a patch Tuesday. Here is the playbook.
+        </div>
+      </div>
+      <div class="playbook-list">
+        <div class="playbook-item">
+          <div class="playbook-num">01</div>
+          <div class="playbook-body"><strong>Inventory (CBOM — Cryptographic Bill of Materials).</strong> Know where every RSA, ECDSA, and ECDHE lives. You cannot migrate what you cannot see.</div>
+        </div>
+        <div class="playbook-item">
+          <div class="playbook-num">02</div>
+          <div class="playbook-body"><strong>Triage by horizon.</strong> Data with a secrecy lifetime past 2030 is harvest-now risk. Migrate those first.</div>
+        </div>
+        <div class="playbook-item">
+          <div class="playbook-num">03</div>
+          <div class="playbook-body"><strong>Pressure your vendors.</strong> SaaS, CAs, HSM, KMS, CDN — if they don't have a PQC roadmap, you don't either.</div>
+        </div>
+        <div class="playbook-item">
+          <div class="playbook-num">04</div>
+          <div class="playbook-body"><strong>Build crypto-agility.</strong> The goal isn't one swap — it's being able to swap algorithms again without a rewrite. Use abstraction layers (like TLS cipher negotiation) so swapping the underlying algorithm requires a config change, not a code rewrite.</div>
+        </div>
+        <div class="playbook-item">
+          <div class="playbook-num">05</div>
+          <div class="playbook-body"><strong>Go hybrid first.</strong> Deploy classical + PQC together. Breaks nothing, buys time, protects against both worlds. Use X25519+ML-KEM-768 for key exchange and RSA+ML-DSA for signatures — both are shipping in major TLS libraries today.</div>
+        </div>
+        <div class="playbook-item">
+          <div class="playbook-num">06</div>
+          <div class="playbook-body"><strong>Align to the deadlines.</strong> CNSA 2.0 wants PQC widespread by 2033. NIST and NSA set the tempo.</div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-fade"></div>
+  </div>
+</div>
+
+<!-- HOOK BAR -->
+<div class="hook-bar" id="hookBar">
+  <div class="hook-text">
+    <strong>Encryption is not one project.</strong> It is 42 of them. Inventory first, migrate in waves.
+    <em>The clock started when the standards shipped.</em>
+  </div>
+  <div class="hook-cta">BUILD THE ROADMAP</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn" id="btnPrev" disabled>&#9664; PREV</button>
+  <div class="step-dots" id="stepDots"></div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+    <button class="btn" id="btnNext">NEXT &#9654;</button>
+    <div class="ctrl-brand">PQC INTERACTIVE DEMO &middot; CNXN</div>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  {
+    stepLabel: 'STEP 1 / 5',
+    headline:  'MEET THE ENCRYPTION SURFACE.',
+    text:      'Every modern enterprise runs on encryption — across <strong>7 domains</strong> and <strong>42 distinct touchpoints</strong>. Most of it relies on RSA and ECC. <em>All of it needs a plan.</em>',
+    section:   'sec0',
+    mode:      'survey',   // no category lit
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 2 / 5',
+    headline:  'EVERY WIRE. EVERY TUNNEL. EVERY HANDSHAKE.',
+    text:      'Every piece of data moving between a person, an app, or a server is protected by <span class="danger">ECC or RSA-based key exchange (ECDHE, X25519, or legacy RSA)</span>. A quantum computer breaks that exchange — and <strong>every domain lights up at once</strong>.',
+    section:   'sec1',
+    mode:      'category',
+    category:  'transit',
+    summaryLabel: 'IN-TRANSIT',
+    summarySub:   'touchpoints using<br>RSA or ECDHE',
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 3 / 5',
+    headline:  'DATA THAT SITS STILL — AND SITS FOR YEARS.',
+    text:      'Disks, databases, backups, and archives use AES — but the <strong>keys that unlock them</strong> are wrapped with RSA. Tapes copied today become readable when a quantum computer arrives. <em>This is the harvest problem, at rest.</em>',
+    section:   'sec2',
+    mode:      'category',
+    category:  'rest',
+    summaryLabel: 'AT-REST',
+    summarySub:   'touchpoints with<br>RSA-wrapped keys',
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 4 / 5',
+    headline:  'SIGNATURES — THE TRUST LAYER CRUMBLES.',
+    text:      'Every certificate, every JWT, every code-signed update, every Git commit, every passport — <span class="danger">RSA, ECDSA, or Ed25519 signatures</span> (all discrete log problems, all broken by Shor\'s). A quantum computer forges all of them. <strong>The Identity domain lights up completely.</strong>',
+    section:   'sec3',
+    mode:      'category',
+    category:  'sign',
+    summaryLabel: 'SIGNATURES',
+    summarySub:   'touchpoints with<br>forgeable signatures',
+    hookBar:   false,
+  },
+  {
+    stepLabel: 'STEP 5 / 5',
+    headline:  'THE PQC POSTURE — WHAT A MIGRATED ENTERPRISE LOOKS LIKE.',
+    text:      'Every touchpoint re-keyed with <em>ML-KEM</em> (key exchange), <em>ML-DSA</em> (signatures), or <em>SLH-DSA</em> (hash-based fallback). Hybrid cipher suites live alongside classical during the transition. <strong>This is the destination. The playbook gets you there.</strong>',
+    section:   'sec4',
+    mode:      'pqc',
+    summaryLabel: 'PQC-MIGRATED',
+    summarySub:   'touchpoints on<br>post-quantum algorithms',
+    hookBar:   true,
+  },
+];
+
+let currentStep = 0;
+
+const CAT_TOTALS = { transit: 11, rest: 12, sign: 19 };
+const TOTAL_CHIPS = 42;
+
+function applyChips(step) {
+  const chips = document.querySelectorAll('.chip');
+  chips.forEach(c => c.classList.remove('lit', 'pqc'));
+
+  if (step.mode === 'category') {
+    chips.forEach(c => {
+      if (c.dataset.cat === step.category) c.classList.add('lit');
+    });
+  } else if (step.mode === 'pqc') {
+    chips.forEach(c => c.classList.add('pqc'));
+  }
+  // survey mode: all dim (baseline)
+}
+
+function applyDomainStates(step) {
+  const cards = document.querySelectorAll('.domain-card');
+  cards.forEach(card => {
+    card.classList.remove('has-hit', 'pqc-done');
+    const hitEl = card.querySelector('[data-hitcount]');
+    if (!hitEl) return;
+
+    if (step.mode === 'category') {
+      const lit = card.querySelectorAll('.chip.lit').length;
+      const total = card.querySelectorAll('.chip').length;
+      if (lit > 0) {
+        card.classList.add('has-hit');
+        hitEl.textContent = lit + '/' + total;
+      } else {
+        hitEl.textContent = '';
+      }
+    } else if (step.mode === 'pqc') {
+      card.classList.add('pqc-done');
+      const total = card.querySelectorAll('.chip').length;
+      hitEl.textContent = total + '/' + total;
+    } else {
+      hitEl.textContent = '';
+    }
+  });
+}
+
+function applySummary(step) {
+  const card = document.getElementById('summaryCard');
+  const title = document.getElementById('summaryTitle');
+  const big = document.getElementById('summaryBig');
+  const sub = document.getElementById('summarySub');
+
+  card.classList.toggle('pqc', step.mode === 'pqc');
+
+  if (step.mode === 'survey') {
+    title.textContent = 'SURVEY';
+    big.textContent = TOTAL_CHIPS;
+    sub.innerHTML = 'total touchpoints<br>across 7 domains';
+  } else if (step.mode === 'category') {
+    title.textContent = step.summaryLabel;
+    big.textContent = CAT_TOTALS[step.category];
+    sub.innerHTML = step.summarySub;
+  } else if (step.mode === 'pqc') {
+    title.textContent = step.summaryLabel;
+    big.textContent = TOTAL_CHIPS;
+    sub.innerHTML = step.summarySub;
+  }
+}
+
+function applyStep(idx) {
+  const s = STEPS[idx];
+  currentStep = idx;
+  const isFinal = (idx === STEPS.length - 1);
+
+  // Narrative
+  const narrLabel = document.getElementById('narrStepLabel');
+  narrLabel.textContent = s.stepLabel;
+  narrLabel.classList.toggle('pqc', isFinal);
+  document.getElementById('narrHeadline').textContent = s.headline;
+  document.getElementById('narrText').innerHTML = s.text;
+
+  // Detail section
+  document.querySelectorAll('.detail-section').forEach(el => el.classList.remove('visible'));
+  const sec = document.getElementById(s.section);
+  if (sec) sec.classList.add('visible');
+  document.getElementById('detailPanel').scrollTop = 0;
+  document.getElementById('detailPanel').classList.toggle('step-final', isFinal);
+
+  // Grid
+  applyChips(s);
+  applyDomainStates(s);
+  applySummary(s);
+
+  // Hook bar
+  document.getElementById('hookBar').classList.toggle('show', s.hookBar);
+
+  // Step dots
+  document.querySelectorAll('.step-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx && !isFinal);
+    d.classList.toggle('pqc-active', i === idx && isFinal);
+  });
+
+  // Buttons
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx === STEPS.length - 1;
+
+  // Phase stepper
+  for (let i = 0; i < STEPS.length; i++) {
+    const pstep = document.getElementById('pstep' + i);
+    if (pstep) {
+      pstep.classList.remove('active', 'pqc-active');
+      if (i <= idx) pstep.classList.add(isFinal && i === idx ? 'pqc-active' : 'active');
+    }
+    if (i < STEPS.length - 1) {
+      const pline = document.getElementById('pline' + i);
+      if (pline) {
+        pline.classList.remove('line-active', 'line-pqc');
+        if (i < idx) pline.classList.add(isFinal && i === idx - 1 ? 'line-pqc' : 'line-active');
+      }
+    }
+  }
+}
+
+function buildDots() {
+  const dotsEl = document.getElementById('stepDots');
+  STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (i === 0 ? ' active' : '');
+    dot.title = 'Go to step ' + (i + 1);
+    dot.addEventListener('click', () => applyStep(i));
+    dotsEl.appendChild(dot);
+  });
+}
+
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if (currentStep > 0) applyStep(currentStep - 1);
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (currentStep < STEPS.length - 1) applyStep(currentStep + 1);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' && currentStep < STEPS.length - 1) applyStep(currentStep + 1);
+  if (e.key === 'ArrowLeft'  && currentStep > 0)                 applyStep(currentStep - 1);
+});
+
+buildDots();
+applyStep(0);
+
+// Keyboard navigation hint
+(function() {
+  const hint = document.createElement('div');
+  hint.className = 'keyboard-hint';
+  hint.textContent = '← → Arrow keys or click dots to navigate';
+  document.body.appendChild(hint);
+  setTimeout(() => { hint.classList.add('fade'); }, 4000);
+  setTimeout(() => { hint.remove(); }, 5200);
+})();
+</script>
+<script src="shared/theme-toggle.js"></script>
+</body>
+</html>
