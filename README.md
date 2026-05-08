@@ -53,7 +53,7 @@ open navigation_shell.html   # macOS
 # or: just double-click the file in Finder / Explorer
 ```
 
-Start at `navigation_shell.html` and click through the scenes in order for the full narrative experience. Each scene can also be opened independently.
+Start at `navigation_shell.html` and click through the scenes in order for the full narrative experience. Each scene can also be opened independently.  Ensure you are running all scenes from the same directory.
 
 **Recommended viewport:** 1060 × 760 (kiosk/presentation). Works in any modern browser.
 
