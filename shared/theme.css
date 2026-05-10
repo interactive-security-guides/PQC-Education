@@ -1,0 +1,178 @@
+/*
+ * PQC Demo — Shared Theme
+ * ─────────────────────────────────────────────────────────────
+ * This file is loaded by every scene and the nav shell.
+ * Dark mode variables live inline in each scene's :root block.
+ * This file only defines light-mode overrides and shared layout.
+ * ─────────────────────────────────────────────────────────────
+ */
+
+/* ── Scene header right slot ─────────────────────────────── */
+/* Wraps .sim-badge + injected theme toggle button side by side */
+/* Nav shell overrides this with its own column layout inline. */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Light mode overrides ────────────────────────────────── */
+/* Applied when <html class="light"> is set by theme-toggle.js */
+:root.light {
+  --bg:          #f0f2f7;
+  --bg2:         #e5e8f0;
+  --bg3:         #dde0ea;
+  --panel:       rgba(0, 0, 0, 0.04);
+  --border:      rgba(0, 0, 0, 0.10);
+  --border-mid:  rgba(0, 0, 0, 0.18);
+  --text:        #2a3245;
+  --text-dim:    #7a8aaa;
+  --text-bright: #0d1117;
+  --safe-glow:   #1a7cb5;
+  --threat-glow: #cc3a00;
+  --quantum:     #00915e;
+  --amber:       #cc6600;
+}
+
+/* Invert the Wave 8 background grid for light mode */
+:root.light body::before {
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(0,0,0,0.025) 0%, transparent 70%);
+}
+:root.light body::after {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px);
+}
+
+/* ── Light mode text fixes — hardcoded values that bypass CSS variables ─── */
+/*
+ * Every element below uses a hardcoded color: #fff or rgba(255,255,255,x)
+ * that doesn't respond to the :root.light variable override above.
+ * These rules restore readable contrast on the light background.
+ */
+
+/* Header title — all scenes */
+:root.light header h1 { color: var(--text-bright); }
+
+/* Narrative bar headline — scenes 4, 5, 6, 7a, 7b */
+:root.light .narr-headline { color: var(--text-bright); }
+
+/* Narrative body text — scenes 1, 2, 4, 5, 6 use rgba(220,228,240,0.92) */
+:root.light .narr-text { color: var(--text); }
+
+/* Scene 4 (lattice): card titles + body in step-through cards */
+:root.light .card-title { color: var(--text-bright); }
+:root.light .card-body  { color: var(--text); }
+
+/* Phase stepper inactive labels — rgba(255,255,255,0.4) variants */
+:root.light .step-label       { color: var(--text-dim); } /* scene 5 */
+:root.light .step-label-phase { color: var(--text-dim); } /* scene 4 */
+
+/* Hook bar — base text and bold child */
+:root.light .hook-text        { color: var(--text); }       /* scenes 6, 7a, 7b: near-white tinted base */
+:root.light .hook-text strong { color: var(--text-bright); } /* scenes 6, 7a, 7b: hardcoded #fff */
+:root.light .hook-text span   { color: var(--text-dim); }   /* scenes 1, 4: rgba(192,207,224,0.5–0.7) */
+
+/* Scene 5 (benchmark): infographic panel secondary labels */
+:root.light .i2s-vs,
+:root.light .ir-title,
+:root.light .ir-val,
+:root.light .il-reason,
+:root.light .il-arrow { color: var(--text-dim); }
+:root.light .key-hint { color: var(--text-dim); }
+
+/* Scene 5: inline-style overrides — 4× .metric-sub divs have style="color:rgba(255,255,255,0.4)" */
+:root.light .metric-sub { color: var(--text-dim) !important; }
+
+/* Scene 1: inline-style overrides — 2× .bf-text strong have style="color:#fff" */
+:root.light .bf-text strong { color: var(--text-bright) !important; }
+
+/* ── Light mode: glass-morphism backgrounds → dark-tinted equivalents ──── */
+/*
+ * Dark mode uses rgba(255,255,255,x) for subtle bright layers on dark bg.
+ * On light bg (#f0f2f7) these render as bright-white patches or invisible
+ * borders — panels lose shape and buttons appear to float on nothing.
+ * --panel = rgba(0,0,0,0.04) is the perceptually equivalent inset for light.
+ * --border = rgba(0,0,0,0.10) gives visible edge definition in light mode.
+ */
+
+/* ─ Header badge pills — all scenes (.scene-tag) + nav shell (.demo-label) */
+:root.light .scene-tag,
+:root.light .demo-label {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+/* ─ Nav shell keyboard hint key badges */
+:root.light .hint-key {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+/* ─ Standard PREV/NEXT control buttons — scenes 1, 2, 3, 4 (.ctrl-btn) */
+/*   Scene 1 also has a hardcoded rgba(10,12,22,0.95) bg; panel overrides it */
+:root.light .ctrl-btn {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+/* ─ Alternate button class — scenes 5, 6, 7a, 7b (.btn) */
+:root.light .btn {
+  background: var(--panel);
+  border-color: var(--border);
+}
+:root.light .btn:hover:not(:disabled) {
+  background: var(--bg3);
+  border-color: var(--border-mid);
+}
+
+/* ─ Scene 2 (Shor's): algorithm pipeline step cards */
+:root.light .pipe-stage {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+/* ─ Scene 2 (Shor's): complexity comparison boxes */
+:root.light .complexity-box {
+  background: var(--panel);
+}
+
+/* ─ Scene 2 (Shor's): dim info-card variant — border only */
+:root.light .info-card.dim-card { border-color: var(--border); }
+
+/* ─ Scene 1 (Vault): brute-force attempt row separators */
+:root.light .bf-row {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+/* ─ Scene 2 (Shor's): card description text — same near-white as narr-text, different class */
+:root.light .card-desc { color: var(--text); }
+:root.light .cx-desc   { color: var(--text); }
+
+/* ─ Scene 2 (Shor's): visualization canvases — hardcoded near-black bg becomes jarring on light */
+/*   SVG/canvas content uses var(--quantum) and accent colors that remain visible on var(--bg3) */
+/*   .terminal intentionally left dark — it is a code console display */
+:root.light .wave-container,
+:root.light .freq-container,
+:root.light .bloch-container {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+/* ─ Scene 2 (Shor's): narrative bar + info-card base lose separation from page at 2% white */
+:root.light .narrative-bar { background: var(--panel); }
+:root.light .info-card      { background: var(--panel); }
+
+/* ─ Scene 2 (Shor's): pipeline arrows at opacity:0.4 go nearly invisible on light bg */
+:root.light .pipe-arrow { opacity: 0.65; }
+
+/* ─ Scene 5 (Benchmark): data visualisation tracks and separators */
+:root.light .metric-bar-wrap  { background: var(--border); }
+:root.light .ir-track         { background: var(--border); }
+:root.light .ms-div           { background: var(--border-mid); }
+:root.light .it-track         { border-bottom-color: var(--border); }
+:root.light .step-infographic {
+  background: var(--panel);
+  border-color: var(--border);
+}
