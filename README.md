@@ -98,7 +98,7 @@ Pure HTML, CSS, and vanilla JavaScript. No dependencies.
 
 ## License
 
-[MIT](LICENSE) — use it, adapt it, run it at your next customer briefing.
+[MIT](LICENSE) — use it, adapt it, run it.
 
 ---
 
