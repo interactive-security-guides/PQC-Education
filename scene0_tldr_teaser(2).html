@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TL;DR — Post-Quantum Cryptography in 35 Seconds</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Bebas+Neue&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+:root {
+  --bg:          #07080d;
+  --bg2:         #0d0f16;
+  --bg3:         #13151f;
+  --panel:       rgba(255,255,255,0.02);
+  --border:      rgba(255,255,255,0.07);
+  --border-mid:  rgba(255,255,255,0.12);
+  --text:        #b8bfcc;
+  --text-dim:    #50596a;
+  --text-bright: #eef0f4;
+  --safe-glow:   #2a9fd6;
+  --threat-glow: #ff2219;
+  --quantum:     #00e87a;
+  --amber:       #ff8800;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  cursor: pointer;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, rgba(255,255,255,0.018) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Era-tinted glow that washes the background per beat */
+.bg-tint {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  transition: background 1.2s ease, opacity 1.2s ease;
+  opacity: 0.55;
+}
+body.era-safe    .bg-tint { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(42,159,214,0.10), transparent 70%); }
+body.era-threat  .bg-tint { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,34,25,0.13), transparent 70%); }
+body.era-amber   .bg-tint { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,136,0,0.13), transparent 70%); }
+body.era-defense .bg-tint { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,232,122,0.10), transparent 70%); }
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+  height: 50px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.home-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-btn:hover { color: var(--text-bright); border-color: var(--border-mid); }
+.scene-tag {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: var(--quantum);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+  color: #fff;
+  line-height: 1;
+}
+header h1 span { color: var(--quantum); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.runtime-badge {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+.runtime-badge span { color: var(--quantum); }
+
+/* MAIN STAGE */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.stage-divider {
+  background: linear-gradient(180deg, transparent, var(--border) 25%, var(--border) 75%, transparent);
+}
+
+/* LEFT COLUMN — narrative + headline */
+.stage-left {
+  padding: 56px 56px 40px 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  min-width: 0;
+}
+.beat-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.beat-label .pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.6s ease, box-shadow 0.6s ease;
+}
+body.era-safe    .beat-label .pip { background: var(--safe-glow);   box-shadow: 0 0 8px var(--safe-glow); }
+body.era-threat  .beat-label .pip { background: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+body.era-amber   .beat-label .pip { background: var(--amber);       box-shadow: 0 0 8px var(--amber); }
+body.era-defense .beat-label .pip { background: var(--quantum);     box-shadow: 0 0 8px var(--quantum); }
+
+.beat-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 70px;
+  letter-spacing: 2.5px;
+  line-height: 0.98;
+  color: var(--text-bright);
+}
+.beat-headline .accent { color: var(--text-bright); transition: color 0.6s ease; }
+body.era-safe    .beat-headline .accent { color: var(--safe-glow); }
+body.era-threat  .beat-headline .accent { color: var(--threat-glow); }
+body.era-amber   .beat-headline .accent { color: var(--amber); }
+body.era-defense .beat-headline .accent { color: var(--quantum); }
+
+.beat-body {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  max-width: 540px;
+}
+.beat-body strong { color: var(--text-bright); font-weight: 600; }
+
+/* RIGHT COLUMN — stat block + visual */
+.stage-right {
+  padding: 56px 64px 40px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  min-width: 0;
+}
+.stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-figure {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 92px;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--text-bright);
+  transition: color 0.6s ease, text-shadow 0.6s ease;
+}
+body.era-safe    .stat-figure { color: var(--safe-glow);   text-shadow: 0 0 28px rgba(42,159,214,0.35); }
+body.era-threat  .stat-figure { color: var(--threat-glow); text-shadow: 0 0 28px rgba(255,34,25,0.35); }
+body.era-amber   .stat-figure { color: var(--amber);       text-shadow: 0 0 28px rgba(255,136,0,0.35); }
+body.era-defense .stat-figure { color: var(--quantum);     text-shadow: 0 0 28px rgba(0,232,122,0.30); }
+.stat-figure .unit {
+  font-size: 36px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+.stat-caption {
+  font-family: 'Inconsolata', monospace;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.visual {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  background: var(--panel);
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.visual svg {
+  width: 100%;
+  height: 100%;
+  max-height: 150px;
+}
+
+/* Beat fade animation */
+.beat-content {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.beat-content.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* FOOTER — progress + controls */
+footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  height: 44px;
+  position: relative;
+  z-index: 10;
+}
+.progress-track {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  height: 6px;
+  align-items: center;
+}
+.progress-seg {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-seg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--quantum);
+  transition: width 0.1s linear;
+}
+.progress-seg.done::after  { width: 100%; }
+.progress-seg.active::after{ background: var(--quantum); box-shadow: 0 0 8px var(--quantum); }
+body.era-safe    .progress-seg.active::after { background: var(--safe-glow);   box-shadow: 0 0 8px var(--safe-glow); }
+body.era-threat  .progress-seg.active::after { background: var(--threat-glow); box-shadow: 0 0 8px var(--threat-glow); }
+body.era-amber   .progress-seg.active::after { background: var(--amber);       box-shadow: 0 0 8px var(--amber); }
+body.era-defense .progress-seg.active::after { background: var(--quantum);     box-shadow: 0 0 8px var(--quantum); }
+
+.foot-ctrl {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.foot-ctrl:hover { color: var(--text-bright); border-color: var(--border-mid); }
+.foot-ctrl.cta {
+  color: var(--quantum);
+  border-color: rgba(0,232,122,0.4);
+}
+.foot-ctrl.cta:hover {
+  color: var(--text-bright);
+  border-color: var(--quantum);
+  box-shadow: 0 0 12px rgba(0,232,122,0.25);
+}
+.foot-hint {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* End-of-teaser overlay */
+.endcard {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgba(7,8,13,0.92);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  padding: 40px;
+  text-align: center;
+}
+.endcard.show { display: flex; opacity: 1; }
+.endcard-eyebrow {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--quantum);
+}
+.endcard-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 3px;
+  color: var(--text-bright);
+  line-height: 1;
+}
+.endcard-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  color: var(--text);
+  max-width: 540px;
+  line-height: 1.4;
+}
+.endcard-actions { display: flex; gap: 14px; margin-top: 8px; }
+.endcard-btn {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.endcard-btn.primary {
+  background: var(--quantum);
+  color: var(--bg);
+  border: 1px solid var(--quantum);
+  font-weight: 700;
+}
+.endcard-btn.primary:hover { box-shadow: 0 0 18px rgba(0,232,122,0.5); }
+.endcard-btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-mid);
+}
+.endcard-btn.ghost:hover { color: var(--text-bright); border-color: var(--text-bright); }
+.endcard-loop {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+.endcard-loop span { color: var(--quantum); font-weight: 700; }
+
+/* Paused overlay indicator */
+.paused-badge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: rgba(7,8,13,0.85);
+  border: 1px solid rgba(255,136,0,0.4);
+  padding: 5px 12px;
+  border-radius: 2px;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.paused-badge.show { opacity: 1; }
+
+@media (max-height: 720px) {
+  .beat-headline { font-size: 56px; }
+  .stat-figure { font-size: 72px; }
+  .visual { height: 130px; }
+  .stage-left, .stage-right { padding-top: 32px; padding-bottom: 28px; }
+}
+</style>
+</head>
+<body class="era-safe">
+
+<div class="bg-tint"></div>
+
+<header>
+  <div class="header-left">
+    <a class="home-btn" href="navigation_shell.html">← Home</a>
+    <div class="scene-tag">TL;DR · 35 SEC</div>
+    <h1>POST-QUANTUM <span>IN 35 SECONDS</span></h1>
+  </div>
+  <div class="header-right">
+    <div class="runtime-badge">RUNTIME <span id="runtime">00:00</span> / 00:36</div>
+  </div>
+</header>
+
+<main>
+  <div class="stage-left">
+    <div class="beat-content" id="leftContent">
+      <div class="beat-label"><span class="pip"></span><span id="beatLabel">Beat 01 · The Foundation</span></div>
+      <div class="beat-headline" id="beatHeadline">Every secure click<br>rests on <span class="accent">hard math</span>.</div>
+      <div class="beat-body" id="beatBody">HTTPS, banking, signed software, and VPNs all rely on problems classical computers can't solve in a human lifetime. <strong>RSA-2048</strong> would take billions of years to factor by brute force.</div>
+    </div>
+  </div>
+  <div class="stage-divider"></div>
+  <div class="stage-right">
+    <div class="beat-content" id="rightContent">
+      <div class="stat-row">
+        <div class="stat-figure" id="statFigure">300<span class="unit">TRILLION YRS</span></div>
+        <div class="stat-caption" id="statCaption">Classical factor time · RSA-2048</div>
+      </div>
+      <div class="visual" id="visual"></div>
+    </div>
+  </div>
+
+  <div class="paused-badge" id="pausedBadge">⏸ PAUSED · CLICK TO RESUME</div>
+
+  <div class="endcard" id="endcard">
+    <div class="endcard-eyebrow">END · 35 SECONDS</div>
+    <div class="endcard-title">THE FULL DEMO<br>GOES DEEPER.</div>
+    <div class="endcard-sub">Six interactive scenes plus two leadership briefings. Explore the threat, the math, the algorithms, and the migration path.</div>
+    <div class="endcard-actions">
+      <a class="endcard-btn primary" href="navigation_shell.html">Explore the Full Demo →</a>
+      <button class="endcard-btn ghost" id="replayBtn">↻ Replay TL;DR</button>
+    </div>
+    <div class="endcard-loop">Auto-replaying in <span id="loopCountdown">15</span>s</div>
+  </div>
+</main>
+
+<footer>
+  <button class="foot-ctrl" id="pauseBtn">⏸ Pause</button>
+  <div class="progress-track" id="progressTrack">
+    <div class="progress-seg"></div>
+    <div class="progress-seg"></div>
+    <div class="progress-seg"></div>
+    <div class="progress-seg"></div>
+    <div class="progress-seg"></div>
+    <div class="progress-seg"></div>
+  </div>
+  <div class="foot-hint">SPACE pause · → skip · ESC home</div>
+  <a class="foot-ctrl cta" href="navigation_shell.html">Full Demo →</a>
+</footer>
+
+<script>
+/* ──────────────────────────────────────────────────────────────
+ * TL;DR Teaser — 6 beats, ~36s total, auto-advances
+ * ────────────────────────────────────────────────────────────── */
+
+const SVGs = {
+  vault: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="160" cy="75" r="55" fill="none" stroke="rgba(42,159,214,0.45)" stroke-width="1.2"/>
+    <circle cx="160" cy="75" r="38" fill="none" stroke="rgba(42,159,214,0.3)" stroke-width="1"/>
+    <circle cx="160" cy="75" r="22" fill="none" stroke="rgba(42,159,214,0.45)" stroke-width="1"/>
+    <circle cx="160" cy="75" r="5" fill="rgba(42,159,214,0.5)"/>
+    <g stroke="rgba(42,159,214,0.3)" stroke-width="1">
+      <line x1="160" y1="75" x2="160" y2="20"/><line x1="160" y1="75" x2="160" y2="130"/>
+      <line x1="160" y1="75" x2="105" y2="75"/><line x1="160" y1="75" x2="215" y2="75"/>
+    </g>
+    <path d="M 145 50 A 18 18 0 0 1 175 50" fill="none" stroke="rgba(42,159,214,0.7)" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="160" y="80" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(42,159,214,0.85)" letter-spacing="2">RSA · ECC</text>
+  </svg>`,
+  shor: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <line x1="20" y1="75" x2="300" y2="75" stroke="rgba(255,34,25,0.12)" stroke-width="1"/>
+    <path d="M 20 75 C 50 25 80 25 110 75 C 140 125 170 125 200 75 C 230 25 260 25 290 75" fill="none" stroke="rgba(255,34,25,0.65)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M 20 75 C 65 50 110 50 155 75 C 200 100 245 100 290 75" fill="none" stroke="rgba(255,85,0,0.4)" stroke-width="1" stroke-dasharray="4,3"/>
+    <circle cx="110" cy="75" r="3.5" fill="rgba(255,85,0,0.7)"/>
+    <circle cx="200" cy="75" r="3.5" fill="rgba(255,85,0,0.7)"/>
+    <text x="160" y="20" text-anchor="middle" font-family="Inconsolata" font-size="10" fill="rgba(255,34,25,0.7)" letter-spacing="2">SHOR'S ALGORITHM · PERIOD FINDING</text>
+    <text x="160" y="140" text-anchor="middle" font-family="Inconsolata" font-size="8" fill="rgba(255,85,0,0.5)" letter-spacing="2">RSA-2048 → factored in hours</text>
+  </svg>`,
+  hndl: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <line x1="30" y1="80" x2="290" y2="80" stroke="rgba(255,34,25,0.15)" stroke-width="1"/>
+    <circle cx="80" cy="80" r="14" fill="rgba(255,34,25,0.12)" stroke="rgba(255,34,25,0.6)" stroke-width="1.5"/>
+    <circle cx="80" cy="80" r="4" fill="rgba(255,34,25,0.7)"/>
+    <circle cx="240" cy="80" r="14" fill="rgba(255,34,25,0.04)" stroke="rgba(255,34,25,0.3)" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <circle cx="240" cy="80" r="4" fill="rgba(255,34,25,0.3)"/>
+    <line x1="94" y1="80" x2="226" y2="80" stroke="rgba(255,85,0,0.55)" stroke-width="2" stroke-dasharray="6,4" stroke-linecap="round"/>
+    <polygon points="222,75 234,80 222,85" fill="rgba(255,85,0,0.55)"/>
+    <text x="80" y="110" text-anchor="middle" font-family="Inconsolata" font-size="11" fill="rgba(255,85,0,0.7)" letter-spacing="2">HARVEST</text>
+    <text x="80" y="124" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(255,85,0,0.5)" letter-spacing="2">TODAY</text>
+    <text x="240" y="110" text-anchor="middle" font-family="Inconsolata" font-size="11" fill="rgba(255,34,25,0.55)" letter-spacing="2">DECRYPT</text>
+    <text x="240" y="124" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(255,34,25,0.4)" letter-spacing="2">~2031</text>
+    <rect x="40" y="40" width="20" height="11" rx="2" fill="rgba(255,34,25,0.1)" stroke="rgba(255,34,25,0.4)" stroke-width="0.8"/>
+    <rect x="64" y="34" width="20" height="11" rx="2" fill="rgba(255,34,25,0.1)" stroke="rgba(255,34,25,0.4)" stroke-width="0.8"/>
+    <rect x="88" y="40" width="20" height="11" rx="2" fill="rgba(255,34,25,0.08)" stroke="rgba(255,34,25,0.3)" stroke-width="0.8"/>
+    <line x1="50" y1="51" x2="72" y2="68" stroke="rgba(255,34,25,0.3)" stroke-width="0.8"/>
+    <line x1="74" y1="45" x2="80" y2="68" stroke="rgba(255,34,25,0.3)" stroke-width="0.8"/>
+  </svg>`,
+  blast: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="160" cy="75" r="14" fill="rgba(255,136,0,0.15)" stroke="rgba(255,136,0,0.7)" stroke-width="1.5"/>
+    <text x="160" y="79" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(255,136,0,0.95)" font-weight="700">CRQC</text>
+    <g stroke="rgba(255,136,0,0.35)" stroke-width="1" stroke-linecap="round">
+      <line x1="148" y1="68" x2="50"  y2="35"/>
+      <line x1="148" y1="82" x2="50"  y2="115"/>
+      <line x1="172" y1="68" x2="270" y2="35"/>
+      <line x1="172" y1="82" x2="270" y2="115"/>
+      <line x1="160" y1="61" x2="160" y2="20"/>
+      <line x1="160" y1="89" x2="160" y2="130"/>
+    </g>
+    <g font-family="Inconsolata" font-size="9" letter-spacing="1.5" font-weight="700">
+      <rect x="14"  y="22" width="76" height="22" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="52" y="37" text-anchor="middle" fill="rgba(255,85,0,0.95)">BANKING · PKI</text>
+      <rect x="14"  y="100" width="76" height="22" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="52" y="115" text-anchor="middle" fill="rgba(255,85,0,0.95)">IDENTITY</text>
+      <rect x="230" y="22" width="76" height="22" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="268" y="37" text-anchor="middle" fill="rgba(255,85,0,0.95)">VPN · TLS</text>
+      <rect x="230" y="100" width="76" height="22" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="268" y="115" text-anchor="middle" fill="rgba(255,85,0,0.95)">ICS · SCADA</text>
+      <rect x="122" y="4"  width="76" height="18" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="160" y="16" text-anchor="middle" fill="rgba(255,85,0,0.95)">BLOCKCHAIN</text>
+      <rect x="122" y="128" width="76" height="18" rx="3" fill="rgba(255,34,25,0.10)" stroke="rgba(255,34,25,0.5)" stroke-width="1"/>
+      <text x="160" y="140" text-anchor="middle" fill="rgba(255,85,0,0.95)">HEALTHCARE</text>
+    </g>
+  </svg>`,
+  lattice: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="rgba(0,232,122,0.18)" stroke-width="1">
+      <line x1="20"  y1="135" x2="110" y2="15"/>
+      <line x1="60"  y1="135" x2="150" y2="15"/>
+      <line x1="100" y1="135" x2="190" y2="15"/>
+      <line x1="140" y1="135" x2="230" y2="15"/>
+      <line x1="180" y1="135" x2="270" y2="15"/>
+      <line x1="220" y1="135" x2="300" y2="25"/>
+      <line x1="300" y1="135" x2="210" y2="15"/>
+      <line x1="260" y1="135" x2="170" y2="15"/>
+      <line x1="220" y1="135" x2="130" y2="15"/>
+      <line x1="180" y1="135" x2="90"  y2="15"/>
+      <line x1="140" y1="135" x2="50"  y2="15"/>
+      <line x1="100" y1="135" x2="20"  y2="25"/>
+    </g>
+    <g fill="rgba(0,232,122,0.6)">
+      <circle cx="90"  cy="75" r="2.5"/>
+      <circle cx="130" cy="75" r="2.5"/>
+      <circle cx="160" cy="75" r="3.5"/>
+      <circle cx="190" cy="75" r="2.5"/>
+      <circle cx="230" cy="75" r="2.5"/>
+      <circle cx="110" cy="45" r="2"/>
+      <circle cx="160" cy="35" r="2"/>
+      <circle cx="210" cy="45" r="2"/>
+      <circle cx="110" cy="105" r="2"/>
+      <circle cx="160" cy="115" r="2"/>
+      <circle cx="210" cy="105" r="2"/>
+    </g>
+    <line x1="160" y1="75" x2="195" y2="75" stroke="rgba(0,232,122,0.85)" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="190,71 200,75 190,79" fill="rgba(0,232,122,0.85)"/>
+    <text x="160" y="145" text-anchor="middle" font-family="Inconsolata" font-size="9" fill="rgba(0,232,122,0.7)" letter-spacing="2">SHORTEST VECTOR · STILL HARD FOR QUANTUM</text>
+  </svg>`,
+  pqc: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <g font-family="Inconsolata" font-weight="700" letter-spacing="1.5">
+      <rect x="20"  y="35" width="130" height="80" rx="4" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+      <text x="85"  y="58" text-anchor="middle" font-size="10" fill="rgba(0,232,122,0.7)" letter-spacing="2.5">KEY EXCHANGE</text>
+      <text x="85"  y="85" text-anchor="middle" font-size="22" fill="rgba(0,232,122,0.95)">KYBER</text>
+      <text x="85"  y="103" text-anchor="middle" font-size="9" fill="rgba(0,232,122,0.55)" letter-spacing="2">ML-KEM · FIPS 203</text>
+
+      <rect x="170" y="35" width="130" height="80" rx="4" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.6)" stroke-width="1.2"/>
+      <text x="235" y="58" text-anchor="middle" font-size="10" fill="rgba(0,232,122,0.7)" letter-spacing="2.5">SIGNATURES</text>
+      <text x="235" y="85" text-anchor="middle" font-size="22" fill="rgba(0,232,122,0.95)">DILITHIUM</text>
+      <text x="235" y="103" text-anchor="middle" font-size="9" fill="rgba(0,232,122,0.55)" letter-spacing="2">ML-DSA · FIPS 204</text>
+
+      <text x="160" y="20" text-anchor="middle" font-size="9" fill="rgba(0,232,122,0.65)" letter-spacing="3">NIST · STANDARDIZED · AUG 2024</text>
+      <text x="160" y="135" text-anchor="middle" font-size="9" fill="rgba(0,232,122,0.5)" letter-spacing="2">LATTICE-BASED · QUANTUM-RESISTANT</text>
+    </g>
+  </svg>`
+};
+
+const BEATS = [
+  {
+    era: 'era-safe',
+    label: 'Beat 01 · The Foundation',
+    headline: `Every secure click<br>rests on <span class="accent">hard math.</span>`,
+    body: `HTTPS, banking, signed software, and VPNs all rely on problems classical computers can't solve in a human lifetime. <strong>RSA-2048</strong> would take billions of years to factor by brute force.`,
+    figure: `300<span class="unit">TRILLION YRS</span>`,
+    caption: `Classical factor time · RSA-2048`,
+    svg: SVGs.vault,
+    duration: 6000
+  },
+  {
+    era: 'era-threat',
+    label: 'Beat 02 · The Quantum Break',
+    headline: `Quantum<br>changes the <span class="accent">math.</span>`,
+    body: `<strong>Shor's algorithm</strong> on a large enough quantum computer factors RSA-2048 in hours, not eons. It also breaks ECC and Diffie-Hellman, the backbone of today's public-key crypto.`,
+    figure: `~8<span class="unit">HOURS</span>`,
+    caption: `Shor's algorithm · RSA-2048 on a CRQC`,
+    svg: SVGs.shor,
+    duration: 6000
+  },
+  {
+    era: 'era-amber',
+    label: 'Beat 03 · The Attack Today',
+    headline: `The attack is<br><span class="accent">already running.</span>`,
+    body: `<strong>Harvest Now, Decrypt Later</strong>: nation-state actors are recording encrypted traffic today and storing it for the day quantum hardware catches up. Long-lived secrets are already compromised.`,
+    figure: `2030<span class="unit">±</span>`,
+    caption: `Credible CRQC window · NIST / NSA estimates`,
+    svg: SVGs.hndl,
+    duration: 6000
+  },
+  {
+    era: 'era-threat',
+    label: 'Beat 04 · The Blast Radius',
+    headline: `Everything online<br>is in <span class="accent">scope.</span>`,
+    body: `PKI, code signing, TLS, VPNs, digital identity, payment rails, ICS/SCADA, blockchain wallets, medical records. If it depends on RSA or ECC, it needs a migration plan.`,
+    figure: `42<span class="unit">TOUCHPOINTS</span>`,
+    caption: `Average enterprise encryption surface`,
+    svg: SVGs.blast,
+    duration: 6000
+  },
+  {
+    era: 'era-defense',
+    label: 'Beat 05 · The Defense',
+    headline: `New math.<br><span class="accent">Lattices.</span>`,
+    body: `Post-quantum cryptography swaps factoring for problems quantum computers <em>can't</em> speed up, like finding the <strong>shortest vector</strong> in a high-dimensional lattice. Hard for classical, hard for quantum.`,
+    figure: `LWE<span class="unit"></span>`,
+    caption: `Learning With Errors · the new hard problem`,
+    svg: SVGs.lattice,
+    duration: 6000
+  },
+  {
+    era: 'era-defense',
+    label: 'Beat 06 · The Standards',
+    headline: `Standards exist.<br>Migration <span class="accent">starts now.</span>`,
+    body: `<strong>NIST FIPS 203 / 204 / 205</strong> ratified the first PQC standards in August 2024: Kyber, Dilithium, SPHINCS+. Crypto-agility and discovery are the first moves. Don't wait for the breach.`,
+    figure: `2024<span class="unit">NIST</span>`,
+    caption: `FIPS 203 · 204 · 205 · standards ratified`,
+    svg: SVGs.pqc,
+    duration: 6000
+  }
+];
+
+const TOTAL_MS = BEATS.reduce((sum, b) => sum + b.duration, 0);
+
+// How long the end screen lingers before auto-replaying (kiosk loop).
+const LOOP_DELAY_MS = 15000;
+
+// State
+let beatIdx        = 0;
+let beatStartedAt  = 0;
+let beatElapsedAcc = 0;
+let runtimeAcc     = 0;
+let rafId          = null;
+let paused         = false;
+let finished       = false;
+let loopTimer      = null;
+let loopInterval   = null;
+
+// DOM
+const body         = document.body;
+const leftContent  = document.getElementById('leftContent');
+const rightContent = document.getElementById('rightContent');
+const beatLabel    = document.getElementById('beatLabel');
+const beatHeadline = document.getElementById('beatHeadline');
+const beatBody     = document.getElementById('beatBody');
+const statFigure   = document.getElementById('statFigure');
+const statCaption  = document.getElementById('statCaption');
+const visual       = document.getElementById('visual');
+const progressSegs = document.querySelectorAll('.progress-seg');
+const pauseBtn     = document.getElementById('pauseBtn');
+const pausedBadge  = document.getElementById('pausedBadge');
+const runtimeEl    = document.getElementById('runtime');
+const endcard      = document.getElementById('endcard');
+const replayBtn    = document.getElementById('replayBtn');
+const loopCountdown= document.getElementById('loopCountdown');
+
+function fmtTime(ms) {
+  const total = Math.floor(ms / 1000);
+  const m = String(Math.floor(total / 60)).padStart(2, '0');
+  const s = String(total % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function renderBeat(idx) {
+  const b = BEATS[idx];
+
+  // Era class swap (drives all color shifts)
+  body.classList.remove('era-safe', 'era-threat', 'era-amber', 'era-defense');
+  body.classList.add(b.era);
+
+  // Fade content out, swap, fade in
+  leftContent.classList.remove('in');
+  rightContent.classList.remove('in');
+
+  setTimeout(() => {
+    beatLabel.textContent    = b.label;
+    beatHeadline.innerHTML   = b.headline;
+    beatBody.innerHTML       = b.body;
+    statFigure.innerHTML     = b.figure;
+    statCaption.textContent  = b.caption;
+    visual.innerHTML         = b.svg;
+    leftContent.classList.add('in');
+    rightContent.classList.add('in');
+  }, 220);
+
+  // Progress segment state
+  progressSegs.forEach((seg, i) => {
+    seg.classList.remove('active', 'done');
+    if (i < idx) seg.classList.add('done');
+    if (i === idx) seg.classList.add('active');
+  });
+}
+
+function tick(now) {
+  if (paused || finished) return;
+  if (!beatStartedAt) beatStartedAt = now;
+  const beatElapsed = (now - beatStartedAt) + beatElapsedAcc;
+  const total = runtimeAcc + beatElapsed;
+
+  runtimeEl.textContent = fmtTime(Math.min(total, TOTAL_MS));
+
+  // Drive the active segment's ::after fill width via a live <style> block
+  // (can't set pseudo-element widths through inline style)
+  const pct = Math.min(100, (beatElapsed / BEATS[beatIdx].duration) * 100);
+  dynamicProgressStyle.textContent =
+    `.progress-seg.active::after { width: ${pct}%; }`;
+
+  if (beatElapsed >= BEATS[beatIdx].duration) {
+    runtimeAcc += BEATS[beatIdx].duration;
+    beatElapsedAcc = 0;
+    beatStartedAt = 0;
+    beatIdx++;
+    if (beatIdx >= BEATS.length) {
+      finish();
+      return;
+    }
+    renderBeat(beatIdx);
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+// Inject a live style element used to drive the active progress fill width
+const dynamicProgressStyle = document.createElement('style');
+document.head.appendChild(dynamicProgressStyle);
+
+function clearLoop() {
+  clearTimeout(loopTimer);
+  clearInterval(loopInterval);
+  loopTimer = null;
+  loopInterval = null;
+}
+
+function start() {
+  clearLoop();
+  finished = false;
+  paused = false;
+  beatIdx = 0;
+  beatStartedAt = 0;
+  beatElapsedAcc = 0;
+  runtimeAcc = 0;
+  endcard.classList.remove('show');
+  pausedBadge.classList.remove('show');
+  pauseBtn.textContent = '⏸ Pause';
+  progressSegs.forEach(s => s.classList.remove('active', 'done'));
+  renderBeat(0);
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function pause() {
+  if (finished || paused) return;
+  paused = true;
+  cancelAnimationFrame(rafId);
+  // Accumulate elapsed on current beat
+  if (beatStartedAt) {
+    beatElapsedAcc += performance.now() - beatStartedAt;
+    beatStartedAt = 0;
+  }
+  pausedBadge.classList.add('show');
+  pauseBtn.textContent = '▶ Resume';
+}
+
+function resume() {
+  if (finished || !paused) return;
+  paused = false;
+  pausedBadge.classList.remove('show');
+  pauseBtn.textContent = '⏸ Pause';
+  rafId = requestAnimationFrame(tick);
+}
+
+function togglePause() { paused ? resume() : pause(); }
+
+function nextBeat() {
+  if (finished) return;
+  // Skip remainder of current beat
+  runtimeAcc += BEATS[beatIdx].duration;
+  beatElapsedAcc = 0;
+  beatStartedAt = 0;
+  beatIdx++;
+  if (beatIdx >= BEATS.length) { finish(); return; }
+  renderBeat(beatIdx);
+}
+
+function finish() {
+  finished = true;
+  cancelAnimationFrame(rafId);
+  progressSegs.forEach(s => { s.classList.remove('active'); s.classList.add('done'); });
+  runtimeEl.textContent = fmtTime(TOTAL_MS);
+  endcard.classList.add('show');
+
+  // Kiosk loop: count down on the end screen, then auto-replay
+  clearLoop();
+  let remaining = Math.round(LOOP_DELAY_MS / 1000);
+  loopCountdown.textContent = remaining;
+  loopInterval = setInterval(() => {
+    remaining = Math.max(0, remaining - 1);
+    loopCountdown.textContent = remaining;
+  }, 1000);
+  loopTimer = setTimeout(start, LOOP_DELAY_MS);
+}
+
+// Event wiring
+pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
+replayBtn.addEventListener('click', (e) => { e.stopPropagation(); start(); });
+
+document.body.addEventListener('click', (e) => {
+  // Don't toggle when clicking links/buttons/endcard actions
+  if (e.target.closest('a, button')) return;
+  if (finished) return;
+  togglePause();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); togglePause(); }
+  else if (e.key === 'ArrowRight')          { e.preventDefault(); nextBeat(); }
+  else if (e.key === 'Escape')              { window.location.href = 'navigation_shell.html'; }
+  else if (e.key === 'r' || e.key === 'R')  { start(); }
+});
+
+// Kick off
+start();
+</script>
+
+<script src="shared/theme-toggle.js"></script>
+
+</body>
+</html>
