@@ -1,4 +1,4 @@
-# Post-Quantum Cryptography — Interactive Demo
+# Post-Quantum Cryptography an Interactive Demo
 
 > **A cinematic, browser-based explainer that turns one of the most consequential shifts in modern security into something anyone can understand in under 10 minutes.**
 
@@ -102,4 +102,4 @@ Pure HTML, CSS, and vanilla JavaScript. No dependencies.
 
 ---
 
-*Built to make the quantum threat legible — because the organizations that understand it earliest will be the ones best positioned to respond.*
+*Built to make the quantum threat legible; because the organizations that understand it earliest will be the ones best positioned to respond.*
